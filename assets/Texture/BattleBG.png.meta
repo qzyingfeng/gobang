@@ -1,0 +1,36 @@
+{
+  "ver": "2.3.5",
+  "uuid": "5850ee00-9f56-4d2e-b187-7934a316e436",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 800,
+  "height": 1200,
+  "platformSettings": {},
+  "subMetas": {
+    "BattleBG": {
+      "ver": "1.0.4",
+      "uuid": "beb54aa6-cd96-45fc-96b6-50599f1e9abc",
+      "rawTextureUuid": "5850ee00-9f56-4d2e-b187-7934a316e436",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": 0,
+      "trimX": 0,
+      "trimY": 0,
+      "width": 800,
+      "height": 1200,
+      "rawWidth": 800,
+      "rawHeight": 1200,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}
