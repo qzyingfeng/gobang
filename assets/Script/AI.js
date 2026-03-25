@@ -67,7 +67,7 @@ var GobangAI = cc.Class({
                 
                 // 分步处理，避免阻塞主线程
                 function processBatch() {
-                    var batchSize = 5; // 每批处理5个位置
+                    var batchSize = 2; // 每批处理2个位置（减少批次大小，降低主线程阻塞）
                     var endIndex = Math.min(currentIndex + batchSize, validMoves.length);
                     
                     for (var i = currentIndex; i < endIndex; i++) {
@@ -123,8 +123,8 @@ var GobangAI = cc.Class({
                             resolve(bestMove || {x: validMoves[0].x, y: validMoves[0].y});
                         }
                     } else {
-                        // 继续处理下一批，让出主线程
-                        setTimeout(processBatch, 0);
+                        // 继续处理下一批，增加间隔到16ms（约60fps），让出主线程给动画
+                        setTimeout(processBatch, 16);
                     }
                 }
                 

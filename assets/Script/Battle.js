@@ -21,6 +21,16 @@ cc.Class({
         
         // AI相关属性
         aiThinkingLabel: cc.Label,   // AI思考提示Label（编辑器中绑定）
+        
+        // 悔棋相关属性
+        undoButton: cc.Button,       // 悔棋按钮（编辑器中绑定）
+        
+        // 游戏信息面板
+        gameInfoNode: cc.Node,       // 游戏信息面板节点（包含GameInfoManager脚本）
+        
+        // 回放控制面板
+        replayUINode: cc.Node,       // 回放控制UI节点（包含ReplayUI脚本）
+        replayProgressLabel: cc.Label, // 回放进度标签（直接绑定，不依赖ReplayUI）
     },
 
     /**
@@ -40,6 +50,19 @@ cc.Class({
         // 落子预览相关状态
         this.previewPosition = null;     // 预览位置 {x, y}
         this.previewChessNode = null;    // 预览棋子节点
+        
+        // 最后落子标记相关
+        this.lastChessNode = null;       // 最后落子的棋子节点
+        
+        // 悔棋功能相关状态
+        this.moveHistory = [];           // 落子历史记录栈
+        this.isUndoing = false;          // 是否正在执行悔棋操作
+        
+        // 回放模式相关状态
+        this.isReplayMode = false;       // 是否处于回放模式
+        
+        // 棋盘快照数组（用于回放跳转优化）
+        this.boardSnapshots = [];
         
         // 初始化棋盘数组，0表示空，1表示黑子，2表示白子
         this.map = [];
@@ -62,6 +85,19 @@ cc.Class({
         // 隐藏胜利弹窗
         if (this.winPopupNode) {
             this.winPopupNode.active = false;
+        }
+        
+        // 初始化游戏信息面板管理器
+        this.gameInfoManagerScript = null;
+        if (this.gameInfoNode) {
+            this.gameInfoManagerScript = this.gameInfoNode.getComponent("GameInfoManager");
+        }
+        
+        // 初始化回放UI管理器
+        this.replayUIScript = null;
+        if (this.replayUINode) {
+            this.replayUIScript = this.replayUINode.getComponent("ReplayUI");
+            this.replayUINode.zIndex = 150;
         }
         
         // AI相关初始化
@@ -89,10 +125,113 @@ cc.Class({
             this.aiThinkingLabel.node.active = false;
         }
         
-        // 检查音效管理器
-        if (typeof AudioManager === 'undefined') {
-            cc.warn("AudioManager未定义，音效功能将不可用");
+
+        
+        // 对象池初始化（性能优化：复用棋子节点，减少GC压力）
+        this.chessPool = [];           // 棋子对象池
+        this.chessPoolSize = 30;       // 对象池初始大小（预创建30个棋子）
+        this.activeChessNodes = [];    // 当前激活的棋子节点列表
+        
+        // 预创建棋子到对象池
+        this._initChessPool();
+    },
+
+    /**
+     * 初始化棋子对象池
+     * 预创建指定数量的棋子节点，避免游戏中频繁创建
+     */
+    _initChessPool() {
+        for (let i = 0; i < this.chessPoolSize; i++) {
+            let chessNode = cc.instantiate(this.pfchess);
+            chessNode.parent = this.node;
+            chessNode.active = false;  // 隐藏状态
+            this.chessPool.push(chessNode);
         }
+        cc.log("对象池初始化完成，预创建", this.chessPoolSize, "个棋子");
+    },
+
+    /**
+     * 从对象池获取棋子节点
+     * 如果对象池为空，创建新节点
+     * @returns {cc.Node} 棋子节点
+     */
+    _getChessFromPool() {
+        let chessNode = null;
+        
+        if (this.chessPool.length > 0) {
+            // 从对象池取出
+            chessNode = this.chessPool.pop();
+            cc.log("从对象池获取棋子，剩余:", this.chessPool.length);
+        } else {
+            // 对象池为空，创建新节点
+            chessNode = cc.instantiate(this.pfchess);
+            chessNode.parent = this.node;
+            cc.log("对象池为空，创建新棋子");
+        }
+        
+        // 重置棋子状态
+        let chessScript = chessNode.getComponent("Chess");
+        if (chessScript) {
+            chessScript.reset();
+        }
+        
+        // 添加到激活列表
+        this.activeChessNodes.push(chessNode);
+        
+        return chessNode;
+    },
+
+    /**
+     * 保存棋盘快照（用于回放跳转）
+     * 返回棋盘状态的深拷贝
+     * @returns {Array} 棋盘状态副本
+     */
+    _saveBoardSnapshot() {
+        let snapshot = [];
+        for (let i = 0; i < this.mapHeight; ++i) {
+            snapshot[i] = [];
+            for (let j = 0; j < this.mapWidth; ++j) {
+                snapshot[i][j] = this.map[i][j];
+            }
+        }
+        return snapshot;
+    },
+
+    /**
+     * 回收棋子节点到对象池
+     * @param {cc.Node} chessNode - 要回收的棋子节点
+     */
+    _putChessToPool(chessNode) {
+        if (!chessNode) return;
+        
+        // 从激活列表移除
+        let index = this.activeChessNodes.indexOf(chessNode);
+        if (index > -1) {
+            this.activeChessNodes.splice(index, 1);
+        }
+        
+        // 隐藏节点
+        chessNode.active = false;
+        
+        // 放回对象池
+        this.chessPool.push(chessNode);
+        cc.log("回收棋子到对象池，池大小:", this.chessPool.length);
+    },
+
+    /**
+     * 回收所有激活的棋子到对象池
+     */
+    _recycleAllChess() {
+        cc.log("开始回收所有棋子，数量:", this.activeChessNodes.length);
+        
+        // 复制数组，避免遍历时修改
+        let nodesToRecycle = this.activeChessNodes.slice();
+        
+        for (let i = 0; i < nodesToRecycle.length; i++) {
+            this._putChessToPool(nodesToRecycle[i]);
+        }
+        
+        cc.log("回收完成，对象池大小:", this.chessPool.length);
     },
 
     /**
@@ -215,9 +354,7 @@ cc.Class({
         this.previewChessNode.active = true;
         
         // 播放预览音效
-        if (typeof AudioManager !== 'undefined') {
-            AudioManager.play('preview');
-        }
+        AudioManager.play('preview');
     },
 
     /**
@@ -238,18 +375,57 @@ cc.Class({
         // 隐藏预览
         this.hidePreview();
         
+        // 清除上一个棋子的最后落子标记
+        if (this.lastChessNode) {
+            let lastChessScript = this.lastChessNode.getComponent("Chess");
+            if (lastChessScript) {
+                lastChessScript.hideLastMoveMarker();
+            }
+        }
+        
         // 在棋盘数组中记录棋子
         this.map[ipos.y][ipos.x] = this.playerIdx;
         
-        // 创建正式棋子
-        let ndChess = cc.instantiate(this.pfchess);
-        ndChess.parent = this.node;
+        // 从对象池获取棋子（性能优化：复用已有节点，避免频繁创建）
+        let ndChess = this._getChessFromPool();
         ndChess.setPosition(this._getChessPosition(ipos));
         ndChess.getComponent("Chess").updateUI(this.playerIdx);
         
+        // 播放落子动画
+        let chessScript = ndChess.getComponent("Chess");
+        let self = this;
+        
+        // 使用动画回调，确保动画完成后再执行后续逻辑
+        chessScript.playPlaceAnimation(function() {
+            // 动画完成后的回调
+            // PvE模式，AI回合（在动画完成后触发，避免主线程竞争）
+            if (self.gameMode === 'pve' && self.playerIdx === 2 && !self.gameOver) {
+                // 增加延迟，确保UI完全更新
+                setTimeout(function() {
+                    self.triggerAIMove();
+                }, 100);
+            }
+        });
+        
+        // 显示最后落子标记
+        chessScript.showLastMoveMarker();
+        
+        // 更新最后落子节点
+        this.lastChessNode = ndChess;
+        
+        // 记录落子历史（悔棋功能）
+        if (!this.isUndoing) {
+            this.recordMove(ipos.x, ipos.y, this.playerIdx, ndChess);
+            // 保存棋盘快照（用于回放跳转优化）
+            this.boardSnapshots.push(this._saveBoardSnapshot());
+        }
+        
         // 播放落子音效
-        if (typeof AudioManager !== 'undefined') {
-            AudioManager.play('placeChess');
+        AudioManager.play('placeChess');
+        
+        // 更新游戏信息面板（增加回合数）
+        if (this.gameInfoManagerScript && !this.isUndoing) {
+            this.gameInfoManagerScript.incrementTurn();
         }
         
         // 检查是否胜利
@@ -259,6 +435,10 @@ cc.Class({
         if (this._iswin(_pos)) {
             // 设置游戏结束标志
             this.gameOver = true;
+            
+            // 初始化回放管理器
+            this._initReplayManager();
+            
             // 显示胜利弹窗
             this.showWinPopup(this.playerIdx);
             console.log("游戏结束！获胜方：" + (this.playerIdx == 1 ? "黑子" : "白子"));
@@ -267,11 +447,6 @@ cc.Class({
             this.playerIdx = (this.playerIdx == 1 ? 2 : 1);
             // 更新当前玩家显示文本
             this.updatePlayerText();
-            
-            // PvE模式，AI回合
-            if (this.gameMode === 'pve' && this.playerIdx === 2) {
-                this.triggerAIMove();
-            }
         }
     },
 
@@ -308,9 +483,7 @@ cc.Class({
         }
         
         // 播放胜利音效
-        if (typeof AudioManager !== 'undefined') {
-            AudioManager.play('win');
-        }
+        AudioManager.play('win');
     },
 
     /**
@@ -325,6 +498,15 @@ cc.Class({
         // 隐藏预览
         this.hidePreview();
         
+        // 重置最后落子标记
+        this.lastChessNode = null;
+        
+        // 清空悔棋历史
+        this.moveHistory = [];
+        
+        // 清空棋盘快照（用于回放跳转优化）
+        this.boardSnapshots = [];
+        
         // 清空棋盘
         for (let i = 0; i < this.mapHeight; ++i) {
             for (let j = 0; j < this.mapWidth; ++j) {
@@ -332,18 +514,20 @@ cc.Class({
             }
         }
         
-        // 移除所有棋子节点
-        let children = this.node.children.slice();
-        for (let i = 0; i < children.length; i++) {
-            let child = children[i];
-            if (child.getComponent("Chess")) {
-                child.destroy();
-            }
-        }
+        // 回收所有棋子到对象池（性能优化：复用节点，避免销毁和重新创建）
+        this._recycleAllChess();
         
         // 隐藏胜利弹窗
         if (this.winPopupNode) {
             this.winPopupNode.active = false;
+        }
+        
+        // 重置游戏信息面板
+        if (this.gameInfoManagerScript) {
+            this.gameInfoManagerScript.reset();
+            cc.log("游戏信息面板已重置");
+        } else {
+            cc.warn("gameInfoManagerScript 为 null，无法重置游戏信息面板");
         }
         
         // 更新显示文本
@@ -639,5 +823,349 @@ cc.Class({
             this.ndBase.position.x + ipos.x * this.chessWidth,
             this.ndBase.position.y + ipos.y * this.chessHeigth
         );
+    },
+
+    // ==================== 悔棋功能相关方法 ====================
+
+    /**
+     * 记录落子历史（悔棋功能）
+     * @param {number} x - X坐标
+     * @param {number} y - Y坐标
+     * @param {number} playerIdx - 玩家索引
+     * @param {cc.Node} chessNode - 棋子节点
+     */
+    recordMove(x, y, playerIdx, chessNode) {
+        this.moveHistory.push({
+            x: x,
+            y: y,
+            playerIdx: playerIdx,
+            chessNode: chessNode
+        });
+    },
+
+    /**
+     * 悔棋操作
+     * 撤销最后一步落子，PvE模式下撤销玩家和AI的两步
+     */
+    undoLastMove() {
+        // 检查是否可以悔棋
+        if (this.moveHistory.length === 0) {
+            return;
+        }
+        
+        if (this.gameOver) {
+            return;
+        }
+        
+        if (this.isAIThinking) {
+            return;
+        }
+        
+        // PvE模式下撤销两步（玩家和AI）
+        if (this.gameMode === 'pve') {
+            // 撤销AI的落子
+            if (this.moveHistory.length > 0) {
+                let aiMove = this.moveHistory.pop();
+                this._undoSingleMove(aiMove);
+            }
+            // 撤销玩家的落子
+            if (this.moveHistory.length > 0) {
+                let playerMove = this.moveHistory.pop();
+                this._undoSingleMove(playerMove);
+            }
+        } else {
+            // PvP模式下只撤销一步
+            let lastMove = this.moveHistory.pop();
+            this._undoSingleMove(lastMove);
+        }
+        
+        // 播放悔棋音效
+        AudioManager.play('buttonClick');
+        
+        // 更新游戏信息面板（增加悔棋次数）
+        if (this.gameInfoManagerScript) {
+            this.gameInfoManagerScript.incrementUndoCount();
+        } else {
+            cc.warn("gameInfoManagerScript 未绑定，无法更新悔棋次数");
+        }
+    },
+
+    /**
+     * 撤销单步落子
+     * @param {Object} move - 落子记录 {x, y, playerIdx, chessNode}
+     */
+    _undoSingleMove(move) {
+        // 从棋盘数组中清除棋子
+        this.map[move.y][move.x] = 0;
+        
+        // 回收棋子节点到对象池
+        if (move.chessNode) {
+            this._putChessToPool(move.chessNode);
+        }
+        
+        // 切换回上一个玩家
+        this.playerIdx = move.playerIdx;
+        
+        // 弹出对应的棋盘快照
+        if (this.boardSnapshots.length > 0) {
+            this.boardSnapshots.pop();
+        }
+        
+        // 更新显示文本
+        this.updatePlayerText();
+        
+        // 更新最后落子标记
+        this._updateLastMoveMarker();
+    },
+
+    /**
+     * 更新最后落子标记
+     */
+    _updateLastMoveMarker() {
+        // 隐藏当前最后落子标记
+        if (this.lastChessNode) {
+            let lastChessScript = this.lastChessNode.getComponent("Chess");
+            if (lastChessScript) {
+                lastChessScript.hideLastMoveMarker();
+            }
+        }
+        
+        // 如果还有历史记录，显示上一个落子标记
+        if (this.moveHistory.length > 0) {
+            let lastMove = this.moveHistory[this.moveHistory.length - 1];
+            if (lastMove.chessNode) {
+                let chessScript = lastMove.chessNode.getComponent("Chess");
+                if (chessScript) {
+                    chessScript.showLastMoveMarker();
+                }
+                this.lastChessNode = lastMove.chessNode;
+            }
+        } else {
+            this.lastChessNode = null;
+        }
+    },
+
+    /**
+     * 悔棋按钮点击事件处理
+     */
+    onUndoClick() {
+        this.undoLastMove();
+    },
+
+    // ==================== 回放功能相关方法 ====================
+
+    /**
+     * 初始化回放管理器
+     * 在游戏结束时调用
+     */
+    _initReplayManager() {
+        if (typeof ReplayManager === 'undefined') {
+            return;
+        }
+        
+        // 传递棋盘快照数组，用于回放跳转优化
+        ReplayManager.init(this.moveHistory, this, {
+            onProgressUpdate: this._onReplayProgressUpdate.bind(this),
+            onStateChange: this._onReplayStateChange.bind(this),
+        }, this.boardSnapshots);
+    },
+
+    /**
+     * 开始查看回放
+     */
+    startReplay() {
+        if (typeof ReplayManager === 'undefined') {
+            return;
+        }
+        
+        this.isReplayMode = true;
+        
+        if (this.winPopupNode) {
+            this.winPopupNode.active = false;
+        }
+        this.isPopupShowing = false;
+        
+        this.clearBoardForReplay();
+        
+        if (this.replayUINode) {
+            this.replayUINode.active = true;
+            this.replayUINode.zIndex = 150;
+        }
+        
+        if (this.replayUIScript) {
+            this.replayUIScript.show();
+        }
+        
+        ReplayManager.start();
+    },
+
+    /**
+     * 停止回放
+     */
+    stopReplay() {
+        if (typeof ReplayManager === 'undefined') {
+            return;
+        }
+        
+        ReplayManager.stop();
+        
+        if (this.replayUIScript) {
+            this.replayUIScript.hide();
+        }
+        
+        if (this.replayUINode) {
+            this.replayUINode.active = false;
+        }
+        
+        this.isReplayMode = false;
+        
+        // 重置游戏
+        this.restartGame();
+    },
+
+    /**
+     * 切换回放播放/暂停
+     */
+    toggleReplayPlayPause() {
+        if (typeof ReplayManager === 'undefined') {
+            return;
+        }
+        ReplayManager.togglePlayPause();
+    },
+
+    /**
+     * 回放前进一步
+     */
+    replayStepForward() {
+        if (typeof ReplayManager === 'undefined') {
+            return;
+        }
+        ReplayManager.stepForward();
+    },
+
+    /**
+     * 回放后退一步
+     */
+    replayStepBackward() {
+        if (typeof ReplayManager === 'undefined') {
+            return;
+        }
+        ReplayManager.stepBackward();
+    },
+
+    /**
+     * 回放时落子
+     */
+    replayPlaceChess(x, y, playerIdx) {
+        this.map[y][x] = playerIdx;
+        
+        let ndChess = this._getChessFromPool();
+        ndChess.setPosition(this._getChessPosition({x: x, y: y}));
+        ndChess.getComponent("Chess").updateUI(playerIdx);
+        
+        let chessScript = ndChess.getComponent("Chess");
+        chessScript.playPlaceAnimation();
+        
+        if (this.lastChessNode) {
+            let lastChessScript = this.lastChessNode.getComponent("Chess");
+            if (lastChessScript) {
+                lastChessScript.hideLastMoveMarker();
+            }
+        }
+        chessScript.showLastMoveMarker();
+        this.lastChessNode = ndChess;
+        
+        this.playerIdx = playerIdx;
+        this.updatePlayerText();
+    },
+
+    /**
+     * 从快照恢复棋盘状态（用于回放快速跳转）
+     * @param {Array} snapshot - 棋盘状态二维数组
+     */
+    restoreFromSnapshot(snapshot) {
+        // 清空当前棋盘
+        this._recycleAllChess();
+        this.lastChessNode = null;
+        
+        // 遍历快照恢复棋子并统计数量
+        let blackCount = 0;
+        let whiteCount = 0;
+        let lastPlayerIdx = GameConfig.CHESS.PLAYER_BLACK;
+        
+        for (let y = 0; y < this.mapHeight; y++) {
+            for (let x = 0; x < this.mapWidth; x++) {
+                this.map[y][x] = snapshot[y][x];
+                
+                if (snapshot[y][x] !== GameConfig.CHESS.EMPTY) {
+                    let ndChess = this._getChessFromPool();
+                    ndChess.setPosition(this._getChessPosition({x: x, y: y}));
+                    ndChess.getComponent("Chess").updateUI(snapshot[y][x]);
+                    
+                    // 统计黑白棋数量，记录最后落子的玩家
+                    if (snapshot[y][x] === GameConfig.CHESS.PLAYER_BLACK) {
+                        blackCount++;
+                        lastPlayerIdx = GameConfig.CHESS.PLAYER_BLACK;
+                    } else {
+                        whiteCount++;
+                        lastPlayerIdx = GameConfig.CHESS.PLAYER_WHITE;
+                    }
+                    this.lastChessNode = ndChess;
+                }
+            }
+        }
+        
+        // 显示最后落子标记
+        if (this.lastChessNode) {
+            let lastChessScript = this.lastChessNode.getComponent("Chess");
+            if (lastChessScript) {
+                lastChessScript.showLastMoveMarker();
+            }
+        }
+        
+        // 更新当前玩家：黑子数 > 白子数时轮到白子，否则轮到黑子
+        this.playerIdx = (blackCount > whiteCount) ? GameConfig.CHESS.PLAYER_WHITE : GameConfig.CHESS.PLAYER_BLACK;
+        this.updatePlayerText();
+    },
+
+    /**
+     * 清空棋盘用于回放
+     */
+    clearBoardForReplay() {
+        this._recycleAllChess();
+        
+        for (let i = 0; i < this.mapHeight; ++i) {
+            for (let j = 0; j < this.mapWidth; ++j) {
+                this.map[i][j] = GameConfig.CHESS.EMPTY;
+            }
+        }
+        
+        this.lastChessNode = null;
+        this.playerIdx = GameConfig.CHESS.PLAYER_BLACK;
+        this.updatePlayerText();
+    },
+
+    /**
+     * 回放进度更新回调
+     */
+    _onReplayProgressUpdate(progress) {
+        // 直接更新进度标签
+        if (this.replayProgressLabel) {
+            this.replayProgressLabel.string = progress.currentStep + " / " + progress.totalSteps;
+        }
+        
+        // 同时尝试更新ReplayUI（如果存在）
+        if (this.replayUIScript) {
+            this.replayUIScript.updateProgress(progress);
+        }
+    },
+
+    /**
+     * 回放状态变化回调
+     */
+    _onReplayStateChange(state) {
+        if (this.replayUIScript) {
+            this.replayUIScript.updateProgress(ReplayManager.getProgress());
+        }
     },
 });

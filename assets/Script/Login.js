@@ -6,6 +6,8 @@ cc.Class({
     properties: {
         // AI对战按钮（在编辑器中绑定）
         aiBattleButton: cc.Button,
+        // 设置按钮（在编辑器中绑定）
+        settingButton: cc.Button,
     },
 
     // LIFE-CYCLE CALLBACKS:
@@ -13,10 +15,25 @@ cc.Class({
     // onLoad () {},
 
     start () {
+        // 初始化设置管理器
+        SettingManager.init();
+        // 应用设置
+        AudioManager.setMusicVolume(SettingManager.getMusicVolume());
+        AudioManager.setDefaultVolume(SettingManager.getSoundVolume());
+        
+        // 播放主菜单背景音乐
+        AudioManager.playMusic('bgm_menu', true);
+        
         // 绑定AI对战按钮事件
         if (this.aiBattleButton && this.aiBattleButton.node) {
             this.aiBattleButton.node.on(cc.Node.EventType.TOUCH_START, 
                 this.onStartAI, this);
+        }
+        
+        // 绑定设置按钮事件
+        if (this.settingButton && this.settingButton.node) {
+            this.settingButton.node.on(cc.Node.EventType.TOUCH_START, 
+                this.onOpenSetting, this);
         }
     },
 
@@ -24,9 +41,7 @@ cc.Class({
 
     onStart() {
         // 播放菜单按钮点击音效
-        if (typeof AudioManager !== 'undefined') {
-            AudioManager.play('menuClick');
-        }
+        AudioManager.play('menuClick');
         
         // 人人对战模式
         cc.sys.localStorage.setItem('gameMode', 'pvp');
@@ -35,20 +50,24 @@ cc.Class({
 
     onStartAI() {
         // 播放菜单按钮点击音效
-        if (typeof AudioManager !== 'undefined') {
-            AudioManager.play('menuClick');
-        }
+        AudioManager.play('menuClick');
         
         // 人机对战模式
         cc.sys.localStorage.setItem('gameMode', 'pve');
         cc.director.loadScene("Battle");
     },
 
+    onOpenSetting() {
+        // 播放菜单按钮点击音效
+        AudioManager.play('menuClick');
+        
+        // 加载设置场景
+        cc.director.loadScene("Setting");
+    },
+
     onExit() {
         // 播放菜单按钮点击音效
-        if (typeof AudioManager !== 'undefined') {
-            AudioManager.play('menuClick');
-        }
+        AudioManager.play('menuClick');
         
         cc.game.end();
     },
@@ -58,6 +77,10 @@ cc.Class({
         if (this.aiBattleButton && this.aiBattleButton.node) {
             this.aiBattleButton.node.off(cc.Node.EventType.TOUCH_START, 
                 this.onStartAI, this);
+        }
+        if (this.settingButton && this.settingButton.node) {
+            this.settingButton.node.off(cc.Node.EventType.TOUCH_START, 
+                this.onOpenSetting, this);
         }
     }
 });

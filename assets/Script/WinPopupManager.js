@@ -13,6 +13,8 @@ cc.Class({
         restartButton: cc.Button,
         // 返回菜单按钮
         menuButton: cc.Button,
+        // 查看回放按钮
+        replayButton: cc.Button,
         // 弹窗根节点
         popupNode: cc.Node,
     },
@@ -28,9 +30,9 @@ cc.Class({
         this.restartButton.node.on(cc.Node.EventType.TOUCH_START, this.onRestartClick, this);
         this.menuButton.node.on(cc.Node.EventType.TOUCH_START, this.onMenuClick, this);
         
-        // 检查音效管理器
-        if (typeof AudioManager === 'undefined') {
-            cc.warn("AudioManager未定义，音效功能将不可用");
+        // 绑定回放按钮事件（如果存在）
+        if (this.replayButton) {
+            this.replayButton.node.on(cc.Node.EventType.TOUCH_START, this.onReplayClick, this);
         }
     },
 
@@ -60,9 +62,7 @@ cc.Class({
      */
     onRestartClick() {
         // 播放按钮点击音效
-        if (typeof AudioManager !== 'undefined') {
-            AudioManager.play('buttonClick');
-        }
+        AudioManager.play('buttonClick');
         
         // 隐藏弹窗
         this.hideWinPopup();
@@ -75,13 +75,29 @@ cc.Class({
      */
     onMenuClick() {
         // 播放按钮点击音效
-        if (typeof AudioManager !== 'undefined') {
-            AudioManager.play('buttonClick');
-        }
+        AudioManager.play('buttonClick');
         
         // 隐藏弹窗
         this.hideWinPopup();
         // 加载登录场景
         cc.director.loadScene("Login");
+    },
+    
+    /**
+     * 查看回放按钮点击事件处理
+     */
+    onReplayClick() {
+        // 播放按钮点击音效
+        AudioManager.play('buttonClick');
+        
+        // 获取父节点（Battle场景根节点）
+        var battleNode = this.node.parent;
+        if (battleNode) {
+            var battleScript = battleNode.getComponent("Battle");
+            if (battleScript) {
+                // 调用Battle的startReplay方法
+                battleScript.startReplay();
+            }
+        }
     },
 });

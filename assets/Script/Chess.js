@@ -1,6 +1,11 @@
 /**
  * 棋子脚本 - 处理棋子UI显示
  * 负责根据玩家索引更新棋子外观（黑子或白子）
+ * 
+ * 性能优化版本：
+ * - 标记节点只创建一次，后续通过active切换显示
+ * - 动画对象复用，避免频繁创建
+ * - Graphics绘制只执行一次
  */
 
 cc.Class({
@@ -17,6 +22,12 @@ cc.Class({
     onLoad() {
         // 初始化棋子显示
         this.initChess();
+        
+        // 初始化标记节点（只创建一次）
+        this.markerNode = null;
+        
+        // 缓存动画模板（只创建一次）
+        this._placeAnimTemplate = cc.scaleTo(0.2, 1).easing(cc.easeBackOut());
     },
 
     /**
@@ -24,6 +35,20 @@ cc.Class({
      */
     start() {
         // 棋子初始化逻辑
+    },
+
+    /**
+     * 组件销毁时调用
+     */
+    onDestroy() {
+        // 清理标记节点
+        if (this.markerNode) {
+            this.markerNode.destroy();
+            this.markerNode = null;
+        }
+        
+        // 清理动画模板
+        this._placeAnimTemplate = null;
     },
 
     /**
@@ -77,5 +102,81 @@ cc.Class({
         }
         
         return 0;  // 未知类型
+    },
+
+    /**
+     * 播放落子动画
+     * 棋子从缩小状态缩放到正常大小，带有弹性效果
+     * 性能优化：复用动画模板，避免每次创建新对象
+     * @param {Function} callback - 动画完成后的回调函数（可选）
+     */
+    playPlaceAnimation(callback) {
+        // 设置初始缩放为0
+        this.node.scale = 0;
+        
+        // 克隆动画模板（比创建新对象更高效）
+        let action = this._placeAnimTemplate.clone();
+        
+        // 如果有回调，添加回调动作
+        if (callback) {
+            action = cc.sequence(action, cc.callFunc(callback));
+        }
+        
+        this.node.runAction(action);
+    },
+
+    /**
+     * 显示最后落子标记
+     * 性能优化：标记节点只创建一次，后续通过active切换
+     */
+    showLastMoveMarker() {
+        // 如果标记节点不存在，创建一次
+        if (!this.markerNode) {
+            this.markerNode = new cc.Node("LastMoveMarker");
+            this.markerNode.parent = this.node;
+            
+            // 添加绘图组件，只绘制一次
+            let graphics = this.markerNode.addComponent(cc.Graphics);
+            graphics.fillColor = cc.Color.RED;
+            graphics.circle(0, 0, 8);
+            graphics.fill();
+            
+            // 设置标记位置（棋子中心）
+            this.markerNode.setPosition(0, 0);
+        }
+        
+        // 显示标记（不重新创建）
+        this.markerNode.active = true;
+    },
+
+    /**
+     * 隐藏最后落子标记
+     * 性能优化：只隐藏节点，不销毁
+     */
+    hideLastMoveMarker() {
+        if (this.markerNode) {
+            this.markerNode.active = false;
+        }
+    },
+
+    /**
+     * 重置棋子状态（用于对象池复用）
+     * 在从对象池取出棋子时调用，重置所有状态
+     */
+    reset() {
+        // 停止所有动画
+        this.node.stopAllActions();
+        
+        // 重置缩放
+        this.node.scale = 1;
+        
+        // 重置透明度
+        this.node.opacity = 255;
+        
+        // 隐藏最后落子标记
+        this.hideLastMoveMarker();
+        
+        // 显示节点
+        this.node.active = true;
     },
 });

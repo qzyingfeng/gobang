@@ -161,6 +161,87 @@ var AudioManager = {
     },
     
     /**
+     * 设置背景音乐音量
+     * @param {number} volume - 音量（0-1）
+     */
+    setMusicVolume: function(volume) {
+        this._musicVolume = Math.max(0, Math.min(1, volume));
+        if (this._musicAudioId !== -1) {
+            try {
+                cc.audioEngine.setVolume(this._musicAudioId, this._musicVolume);
+            } catch (e) {
+                // 忽略错误
+            }
+        }
+    },
+    
+    /**
+     * 获取背景音乐音量
+     * @returns {number} 音量（0-1）
+     */
+    getMusicVolume: function() {
+        return this._musicVolume;
+    },
+    
+    /**
+     * 播放背景音乐
+     * @param {string} audioName - 音频名称
+     * @param {boolean} loop - 是否循环播放
+     */
+    playMusic: function(audioName, loop) {
+        var self = this;
+        loop = loop !== undefined ? loop : true;
+        
+        // 如果正在播放相同的音乐，不重复播放
+        if (this._currentMusicName === audioName && this._musicAudioId !== -1) {
+            return;
+        }
+        
+        // 停止当前背景音乐
+        this.stopMusic();
+        
+        // 如果已加载，直接播放
+        if (this._audioClips[audioName]) {
+            this._playMusicClip(this._audioClips[audioName], loop, audioName);
+            return;
+        }
+        
+        // 否则先加载再播放
+        this._loadAudioClip(audioName, function(clip) {
+            if (clip) {
+                self._playMusicClip(clip, loop, audioName);
+            }
+        });
+    },
+    
+    /**
+     * 播放背景音乐剪辑内部方法
+     */
+    _playMusicClip: function(clip, loop, audioName) {
+        try {
+            this._musicAudioId = cc.audioEngine.play(clip, loop, this._musicVolume);
+            this._currentMusicName = audioName;
+        } catch (e) {
+            cc.warn('背景音乐播放失败:', audioName);
+        }
+    },
+    
+    /**
+     * 停止背景音乐
+     */
+    stopMusic: function() {
+        if (this._musicAudioId !== -1) {
+            try {
+                cc.audioEngine.stop(this._musicAudioId);
+            } catch (e) {
+                // 忽略停止错误
+            }
+            this._musicAudioId = -1;
+            this._currentMusicName = null;
+        }
+    },
+    
+    /**
      * 预加载所有Audio目录下的音频（谨慎使用，可能很多）
      * @param {Function} callback - 加载完成回调
      */
