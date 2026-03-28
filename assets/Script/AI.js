@@ -59,18 +59,34 @@ const GobangAI = cc.Class({
                     return;
                 }
                 
+                // 如果限制了最大搜索位置数量，截断数组
+                if (this.config.maxSearchPositions && this.config.maxSearchPositions > 0) {
+                    validMoves.length = Math.min(validMoves.length, this.config.maxSearchPositions);
+                }
+                
+                // 记录 top N 的备选落子点（用于 easy 难度随机选择）
+                const topMoves = [];
+                const topCount = this.config.randomnessCount || 3;
+                
                 // 分步处理，避免阻塞主线程
                 const processBatch = () => {
-                    const batchSize = 2; // 每批处理2个位置（减少批次大小，降低主线程阻塞）
+                    const batchSize = 5; // 每批处理5个位置，提速
                     const endIndex = Math.min(currentIndex + batchSize, validMoves.length);
                     
                     for (let i = currentIndex; i < endIndex; i++) {
                         const move = validMoves[i];
                         
-                        // 检查超时
+                        // 检查超时，立即返回不等当前批次
                         if (Date.now() - startTime > maxTime) {
-                            // 超时，返回当前最佳结果
-                            resolve(bestMove || {x: validMoves[0].x, y: validMoves[0].y});
+                            // 超时，如果有防守位置优先返回，否则返回最佳
+                            if (defendMoves.length > 0) {
+                                resolve(defendMoves[0]);
+                            } else if (this.config.enableRandomness && topMoves.length > 1) {
+                                const randomIndex = Math.floor(Math.random() * topMoves.length);
+                                resolve(topMoves[randomIndex]);
+                            } else {
+                                resolve(bestMove || {x: validMoves[0].x, y: validMoves[0].y});
+                            }
                             return;
                         }
                         
@@ -104,6 +120,16 @@ const GobangAI = cc.Class({
                             bestScore = score;
                             bestMove = {x: move.x, y: move.y};
                         }
+                        
+                        // 记录 top N 落子点（用于 easy 难度随机选择）
+                        if (this.config.enableRandomness) {
+                            topMoves.push({x: move.x, y: move.y, score: score});
+                            // 按分数降序排列，保留 top N
+                            topMoves.sort((a, b) => b.score - a.score);
+                            if (topMoves.length > topCount) {
+                                topMoves.pop();
+                            }
+                        }
                     }
                     
                     currentIndex = endIndex;
@@ -113,6 +139,10 @@ const GobangAI = cc.Class({
                         // 如果有防守位置，优先选择
                         if (defendMoves.length > 0) {
                             resolve(defendMoves[0]);
+                        } else if (this.config.enableRandomness && topMoves.length > 1) {
+                            // easy 难度：随机选择 top N 中的一个
+                            const randomIndex = Math.floor(Math.random() * topMoves.length);
+                            resolve(topMoves[randomIndex]);
                         } else {
                             resolve(bestMove || {x: validMoves[0].x, y: validMoves[0].y});
                         }
@@ -422,15 +452,20 @@ const GobangAI = cc.Class({
         switch(level) {
             case 'easy':
                 this.config.searchDepth = 2;
-                this.config.maxThinkTime = 10000;
+                this.config.maxThinkTime = 1500;  // 1.5秒
+                this.config.enableRandomness = true;  // 开启随机性
+                this.config.randomnessCount = 3;  // 选前3名随机
+                this.config.maxSearchPositions = 8;  // 只搜索8个最近位置
                 break;
             case 'medium':
                 this.config.searchDepth = 3;
-                this.config.maxThinkTime = 15000;
+                this.config.maxThinkTime = 3000;  // 3秒
+                this.config.enableRandomness = false;
                 break;
             case 'hard':
                 this.config.searchDepth = 4;
-                this.config.maxThinkTime = 20000;
+                this.config.maxThinkTime = 5000;  // 5秒
+                this.config.enableRandomness = false;
                 break;
         }
     },

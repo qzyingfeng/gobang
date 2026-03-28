@@ -70,19 +70,19 @@ const ParticleManager = cc.Class({
         
         ps.spriteFrame = this.dotTexture;
         
-        // 配置粒子属性
-        ps.totalParticles = 30;
+        // 配置粒子属性（减少以提升性能）
+        ps.totalParticles = 15;
         ps.life = 5;
         ps.lifeVar = 2;
-        ps.startSize = 20;
-        ps.endSize = 10;
-        ps.startColor = new cc.Color(255, 255, 200, 255);
+        ps.startSize = 15;
+        ps.endSize = 8;
+        ps.startColor = new cc.Color(255, 255, 200, 180);
         ps.endColor = new cc.Color(255, 255, 150, 0);
-        ps.startSpeed = 30;
-        ps.startSpeedVar = 15;
-        ps.posVar = new cc.Vec2(200, 150);
+        ps.startSpeed = 20;
+        ps.startSpeedVar = 10;
+        ps.posVar = new cc.Vec2(150, 100);
         ps.gravity = new cc.Vec2(0, 0);
-        ps.emissionRate = 6;
+        ps.emissionRate = 3;
         ps.loop = true;
         ps.playOnLoad = true;
         
@@ -96,39 +96,89 @@ const ParticleManager = cc.Class({
         
         if (!this.dotTexture) return null;
         
-        const effectNode = new cc.Node("PlaceChessEffect");
-        this.node.addChild(effectNode);
-        effectNode.zIndex = 50;
-        
         const x = position.x !== undefined ? position.x : position.xx;
         const y = position.y !== undefined ? position.y : position.yy;
+        
+        // 创建波纹扩散效果 - 从中心向外扩散的圆环
+        this._createRippleEffect(x, y);
+        
+        // 同时创建小粒子爆发效果
+        this._createPlaceParticles(x, y);
+    },
+    
+    /**
+     * 创建波纹扩散效果
+     * @param {number} x - X坐标
+     * @param {number} y - Y坐标
+     */
+    _createRippleEffect(x, y) {
+        const rippleNode = new cc.Node("RippleEffect");
+        this.node.addChild(rippleNode);
+        rippleNode.setPosition(x, y);
+        rippleNode.zIndex = 52;
+        
+        const graphics = rippleNode.addComponent(cc.Graphics);
+        
+        const radiusMax = 35;
+        const lineWidth = 3;
+        
+        // 使用 easeOut 动画
+        const expand1 = cc.scaleTo(0.4, 1.5).easing(cc.easeOut(2));
+        const fade1 = cc.fadeTo(0.4, 0);
+        
+        // 绘制初始圆环
+        graphics.lineWidth = lineWidth;
+        graphics.strokeColor = cc.color(255, 215, 0, 200);
+        graphics.circle(0, 0, radiusMax);
+        graphics.stroke();
+        
+        // 运行动画
+        rippleNode.runAction(cc.spawn(expand1, fade1));
+        
+        // 动画结束后销毁
+        rippleNode.runAction(cc.sequence(
+            cc.delayTime(0.4),
+            cc.callFunc(() => {
+                rippleNode.destroy();
+            })
+        ));
+    },
+    
+    /**
+     * 创建落子小粒子爆发
+     * @param {number} x - X坐标
+     * @param {number} y - Y坐标
+     */
+    _createPlaceParticles(x, y) {
+        const effectNode = new cc.Node("PlaceChessEffect");
+        this.node.addChild(effectNode);
+        effectNode.zIndex = 51;
         effectNode.setPosition(x, y);
         
         const ps = effectNode.addComponent(cc.ParticleSystem);
         
         ps.spriteFrame = this.dotTexture;
         
-        ps.totalParticles = 20;
-        ps.life = 0.5;
-        ps.lifeVar = 0.2;
-        ps.startSize = 25;
-        ps.endSize = 5;
-        ps.startColor = new cc.Color(255, 255, 100, 255);
-        ps.endColor = new cc.Color(255, 200, 0, 0);
-        ps.startSpeed = 150;
-        ps.startSpeedVar = 50;
-        ps.posVar = new cc.Vec2(20, 20);
-        ps.gravity = new cc.Vec2(0, -50);
+        // 小而快的粒子
+        ps.totalParticles = 25;
+        ps.life = 0.4;
+        ps.lifeVar = 0.15;
+        ps.startSize = 15;
+        ps.endSize = 3;
+        ps.startColor = new cc.Color(255, 255, 150, 255);
+        ps.endColor = new cc.Color(255, 200, 50, 0);
+        ps.startSpeed = 120;
+        ps.startSpeedVar = 40;
+        ps.posVar = new cc.Vec2(15, 15);
+        ps.gravity = new cc.Vec2(0, -30);
         ps.emissionRate = 0;
         ps.loop = false;
         ps.playOnLoad = true;
         ps.autoRemoveOnFinish = true;
         
-        ps.bursts = [{ time: 0, count: 15 }];
+        ps.bursts = [{ time: 0, count: 12 }];
         
         ps.resetSystem();
-        
-        return ps;
     },
 
     playWinEffect(position) {
@@ -140,14 +190,8 @@ const ParticleManager = cc.Class({
             y = position.y !== undefined ? position.y : position.yy;
         }
         
-        // 创建主粒子效果（金色）
-        this._createWinParticleSystem(x, y, new cc.Color(255, 215, 0, 255), new cc.Color(255, 100, 0, 0), 120);
-        
-        // 创建辅粒子效果（橙色，更大范围）
-        this._createWinParticleSystem(x, y, new cc.Color(255, 165, 0, 255), new cc.Color(255, 69, 0, 0), 80);
-        
-        // 创建第三个粒子效果（白色闪烁）
-        this._createWinParticleSystem(x, y, new cc.Color(255, 255, 255, 255), new cc.Color(200, 200, 200, 0), 50);
+        // 只创建一个粒子系统，减少到60个粒子
+        this._createWinParticleSystem(x, y, new cc.Color(255, 215, 0, 255), new cc.Color(255, 100, 0, 0), 60);
     },
     
     /**
@@ -169,28 +213,29 @@ const ParticleManager = cc.Class({
         ps.spriteFrame = this.starTexture;
         
         // 增强粒子参数
-        ps.totalParticles = particleCount;
-        ps.life = 2.0;  // 延长持续时间
-        ps.lifeVar = 0.8;
-        ps.startSize = 35;
-        ps.startSizeVar = 15;
+        ps.totalParticles = 80;
+        ps.life = 1.5;
+        ps.lifeVar = 0.5;
+        ps.startSize = 30;
+        ps.startSizeVar = 10;
         ps.endSize = 8;
         ps.startColor = startColor;
         ps.endColor = endColor;
-        ps.startSpeed = 250;  // 增加速度
-        ps.startSpeedVar = 100;
-        ps.posVar = new cc.Vec2(60, 60);  // 增大扩散范围
-        ps.gravity = new cc.Vec2(0, -100);
+        ps.startSpeed = 80;
+        ps.startSpeedVar = 30;
+        ps.posVar = new cc.Vec2(50, 50);
+        ps.gravity = new cc.Vec2(0, -20);
         ps.emissionRate = 0;
         ps.loop = false;
         ps.playOnLoad = true;
         ps.autoRemoveOnFinish = true;
         
-        // 分批爆发效果
+        // 关键：放在棋子下面（棋子zIndex约50，粒子放40），让粒子从棋子周围爆出来
+        winNode.zIndex = 40;
+        
+        // 单次爆发效果（减少计算）
         ps.bursts = [
-            { time: 0, count: Math.floor(particleCount * 0.4) },
-            { time: 0.3, count: Math.floor(particleCount * 0.3) },
-            { time: 0.6, count: Math.floor(particleCount * 0.3) }
+            { time: 0, count: particleCount }
         ];
         
         ps.resetSystem();

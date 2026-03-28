@@ -25,9 +25,6 @@ cc.Class({
         
         // 初始化标记节点（只创建一次）
         this.markerNode = null;
-        
-        // 缓存动画模板（只创建一次）
-        this._placeAnimTemplate = cc.scaleTo(0.2, 1).easing(cc.easeBackOut());
     },
 
     /**
@@ -46,9 +43,6 @@ cc.Class({
             this.markerNode.destroy();
             this.markerNode = null;
         }
-        
-        // 清理动画模板
-        this._placeAnimTemplate = null;
     },
 
     /**
@@ -106,16 +100,25 @@ cc.Class({
 
     /**
      * 播放落子动画
-     * 棋子从缩小状态缩放到正常大小，带有弹性效果
-     * 性能优化：复用动画模板，避免每次创建新对象
+     * 棋子从缩小状态弹跳到正常大小，带有生动的弹性效果
      * @param {Function} callback - 动画完成后的回调函数（可选）
      */
     playPlaceAnimation(callback) {
         // 设置初始缩放为0
         this.node.scale = 0;
         
-        // 克隆动画模板（比创建新对象更高效）
-        let action = this._placeAnimTemplate.clone();
+        // 创建弹跳动画序列（更生动的落子效果）
+        // 第1段：快速放大到1.0
+        const jump1 = cc.scaleTo(0.15, 1.0).easing(cc.easeBackOut());
+        // 第2段：轻微缩小（弹跳回落）
+        const jump2 = cc.scaleTo(0.08, 0.88).easing(cc.easeIn(2));
+        // 第3段：再次轻微弹起
+        const jump3 = cc.scaleTo(0.06, 1.05).easing(cc.easeOut(2));
+        // 第4段：恢复正常大小
+        const jump4 = cc.scaleTo(0.05, 1.0).easing(cc.easeOut(1));
+        
+        // 组合动画序列
+        let action = cc.sequence(jump1, jump2, jump3, jump4);
         
         // 如果有回调，添加回调动作
         if (callback) {

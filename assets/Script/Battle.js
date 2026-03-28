@@ -158,9 +158,57 @@ cc.Class({
         // 添加 Graphics 组件
         this.graphicsLine = this.graphicsLineNode.addComponent(cc.Graphics);
         
-        // 初始隐藏，在棋子同一层（但不遮挡）
+        // 初始隐藏，zIndex=55 在棋子(50)和UI(100)之间
         this.graphicsLineNode.active = false;
-        this.graphicsLineNode.zIndex = 60;  // 刚好在棋子下方一层，确保可见
+        this.graphicsLineNode.zIndex = 55;
+    },
+    
+    /**
+     * 落子高亮闪烁效果
+     * 在落子位置显示金色闪烁方框
+     * @param {Object} ipos - 棋盘格子坐标 {x, y}
+     */
+    _playPlaceHighlight(ipos) {
+        // 获取棋盘基准点位置
+        const basePos = this.ndBase.position;
+        
+        // 计算落子位置的世界坐标
+        const x = basePos.x + ipos.x * this.chessWidth;
+        const y = basePos.y + ipos.y * this.chessHeigth;
+        
+        // 创建高亮节点
+        const highlightNode = new cc.Node("PlaceHighlight");
+        highlightNode.parent = this.node;
+        highlightNode.setPosition(x, y);
+        highlightNode.zIndex = 54;
+        
+        // 添加 Graphics 组件
+        const graphics = highlightNode.addComponent(cc.Graphics);
+        
+        const size = this.chessWidth * 0.9;
+        const half = size / 2;
+        
+        // 绘制金色方框
+        graphics.lineWidth = 3;
+        graphics.strokeColor = cc.color(255, 215, 0, 255);  // 金色
+        graphics.rect(-half, -half, size, size);
+        graphics.stroke();
+        
+        // 闪烁动画：显现 → 隐藏 → 显现 → 隐藏 → 消失
+        const show1 = cc.fadeTo(0.15, 255);
+        const hide1 = cc.fadeTo(0.15, 0);
+        const show2 = cc.fadeTo(0.15, 255);
+        const hide2 = cc.fadeTo(0.15, 0);
+        const show3 = cc.fadeTo(0.15, 255);
+        const hide3 = cc.fadeTo(0.15, 0);
+        const destroy = cc.callFunc(() => {
+            if (highlightNode) {
+                highlightNode.destroy();
+            }
+        });
+        
+        const seq = cc.sequence(show1, hide1, show2, hide2, show3, hide3, destroy);
+        highlightNode.runAction(seq);
     },
     
     /**
@@ -452,11 +500,14 @@ cc.Class({
             }
         });
         
-        // 播放落子特效
+        // 播放落子特效（粒子效果）
         if (this.particleManager) {
             const chessWorldPos = ndChess.getPosition();
             this.particleManager.playPlaceChessEffect(chessWorldPos);
         }
+        
+        // 播放落子高亮闪烁效果
+        this._playPlaceHighlight(ipos);
         
         // 显示最后落子标记
         chessScript.showLastMoveMarker();
@@ -492,10 +543,12 @@ cc.Class({
             // 获取获胜的棋子位置数组
             const winChains = this._getWinChains(_pos);
             
-            // 播放胜利特效
+            // 播放胜利特效（粒子 + 光晕）
             if (this.particleManager) {
                 const winPosition = this.lastChessNode ? this.lastChessNode.getPosition() : null;
                 this.particleManager.playWinEffect(winPosition);
+                // 同时显示胜利光晕
+                this._showWinGlow(winPosition);
             }
             
             // 绘制五子连珠连线效果
@@ -934,7 +987,7 @@ cc.Class({
     
     /**
      * 绘制五子连珠连线效果
-     * 在获胜棋子上绘制金色发光线
+     * 从第一个棋子连线到最后一个棋子
      * @param {Array} winChains - 获胜棋子位置数组 [{x,y}, ...]
      */
     _drawWinLine(winChains) {
@@ -943,43 +996,90 @@ cc.Class({
             return;
         }
         
-        // 调试：打印坐标信息
-        const startPos = this._getChessPosition(winChains[0]);
-        const endPos = this._getChessPosition(winChains[winChains.length - 1]);
-        console.log("连线坐标:", startPos, endPos);
-        console.log("graphicsLineNode位置:", this.graphicsLineNode.position);
-        
-        // 显示连线节点
-        this.graphicsLineNode.active = true;
+        if (winChains.length < 2) return;
         
         // 清空之前的内容
         this.graphicsLine.clear();
         
-        // 获取第一个和最后一个棋子的位置（连线起点和终点）
-        if (winChains.length < 2) return;
+        // 获取棋盘基准点位置
+        const basePos = this.ndBase.position;
         
-        // 计算线宽（棋子直径的1/3）
+        // 计算起点和终点坐标
+        const startX = basePos.x + winChains[0].x * this.chessWidth;
+        const startY = basePos.y + winChains[0].y * this.chessHeigth;
+        const endX = basePos.x + winChains[winChains.length - 1].x * this.chessWidth;
+        const endY = basePos.y + winChains[winChains.length - 1].y * this.chessHeigth;
+        
+        // 线宽为棋子宽度的1/3
         const lineWidth = this.chessWidth / 3;
         
-        // 绘制发光连线（两层：外层淡，内层亮）
-        // 外层（淡金色光晕）
-        this.graphicsLine.lineWidth = lineWidth * 1.8;
-        this.graphicsLine.strokeColor = cc.color(255, 215, 0, 180);  // 金色，半透明
-        this.graphicsLine.moveTo(startPos.x, startPos.y);
-        this.graphicsLine.lineTo(endPos.x, endPos.y);
+        // 绘制发光连线（两层）
+        // 外层 - 淡金色
+        this.graphicsLine.lineWidth = lineWidth;
+        this.graphicsLine.strokeColor = cc.color(255, 215, 0, 100);
+        this.graphicsLine.moveTo(startX, startY);
+        this.graphicsLine.lineTo(endX, endY);
         this.graphicsLine.stroke();
         
-        // 内层（亮金色，不透明）
-        this.graphicsLine.lineWidth = lineWidth * 0.9;
-        this.graphicsLine.strokeColor = cc.color(255, 255, 100, 255);  // 亮黄，完全不透明
-        this.graphicsLine.moveTo(startPos.x, startPos.y);
-        this.graphicsLine.lineTo(endPos.x, endPos.y);
+        // 内层 - 亮金色
+        this.graphicsLine.lineWidth = lineWidth / 2;
+        this.graphicsLine.strokeColor = cc.color(255, 255, 150, 255);
+        this.graphicsLine.moveTo(startX, startY);
+        this.graphicsLine.lineTo(endX, endY);
         this.graphicsLine.stroke();
         
-        // 动画效果：0.5s后渐隐
+        // 显示节点
+        this.graphicsLineNode.active = true;
+        
+        // 动画效果：1s后渐隐
         this.scheduleOnce(() => {
             this._fadeOutWinLine();
-        }, 0.5);
+        }, 1.0);
+    },
+    
+    /**
+     * 显示胜利光晕效果（明显可见）
+     * @param {cc.Vec2} position - 胜利位置
+     */
+    _showWinGlow(position) {
+        if (!position) return;
+        
+        const x = position.x !== undefined ? position.x : position.xx;
+        const y = position.y !== undefined ? position.y : position.yy;
+        
+        // 创建光晕节点
+        const glowNode = new cc.Node("WinGlow");
+        glowNode.parent = this.node;
+        glowNode.setPosition(x, y);
+        glowNode.zIndex = 35;  // 在棋子下面，周围
+        
+        const graphics = glowNode.addComponent(cc.Graphics);
+        
+        // 绘制金色光晕（多层同心圆）
+        const colors = [
+            { r: 255, g: 215, b: 0, a: 80, radius: 60 },   // 外层淡
+            { r: 255, g: 215, b: 0, a: 150, radius: 40 },  // 中层
+            { r: 255, g: 255, b: 100, a: 255, radius: 25 }, // 内层亮
+        ];
+        
+        colors.forEach(c => {
+            graphics.lineWidth = 8;
+            graphics.strokeColor = cc.color(c.r, c.g, c.b, c.a);
+            graphics.circle(0, 0, c.radius);
+            graphics.stroke();
+        });
+        
+        // 动画：放大 + 闪烁 + 消失
+        const scale1 = cc.scaleTo(0.3, 1.3).easing(cc.easeOut(2));
+        const fade1 = cc.fadeTo(0.3, 0);
+        
+        glowNode.runAction(cc.spawn(scale1, fade1));
+        
+        // 动画结束后销毁
+        glowNode.runAction(cc.sequence(
+            cc.delayTime(0.3),
+            cc.callFunc(() => glowNode.destroy())
+        ));
     },
     
     /**
