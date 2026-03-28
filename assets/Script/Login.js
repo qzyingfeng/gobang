@@ -1,4 +1,7 @@
-
+/**
+ * 登录场景脚本
+ * 处理主菜单交互：开始游戏、AI对战、设置、退出
+ */
 
 cc.Class({
     extends: cc.Component,
@@ -14,7 +17,7 @@ cc.Class({
 
     // onLoad () {},
 
-    start () {
+    start() {
         // 初始化设置管理器
         SettingManager.init();
         // 应用设置

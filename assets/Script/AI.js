@@ -2,10 +2,10 @@
  * 五子棋AI算法模块
  * 预留扩展接口，支持难度调整
  */
-var GobangAI = cc.Class({
+const GobangAI = cc.Class({
     name: 'GobangAI',
     
-    ctor: function() {
+    ctor() {
         // 默认配置（预留扩展）
         this.config = {
             difficulty: 'medium',
@@ -29,30 +29,24 @@ var GobangAI = cc.Class({
      * @param {number} maxTime - 最大思考时间（毫秒）
      * @returns {Promise} 返回落子位置 {x, y}
      */
-    getBestMove: function(board, player, maxTime) {
-        var self = this;
-        maxTime = maxTime || this.config.maxThinkTime;
-        
-        return new Promise(function(resolve, reject) {
-            var startTime = Date.now();
-            var bestMove = null;
-            var bestScore = -Infinity;
-            var currentIndex = 0;
-            var defendMoves = [];
+    getBestMove(board, player, maxTime = this.config.maxThinkTime) {
+        return new Promise((resolve, reject) => {
+            const startTime = Date.now();
+            let bestMove = null;
+            let bestScore = -Infinity;
+            let currentIndex = 0;
+            const defendMoves = [];
             
             try {
                 // 获取有效位置（启发式搜索）
-                var validMoves = self.getValidMoves(board);
+                const validMoves = this.getValidMoves(board);
                 
                 // 查找对手四连的威胁位置
-                var threats = self.findOpponentFours(board, player);
+                const threats = this.findOpponentFours(board, player);
                 // 将威胁位置合并到有效位置中
-                for (var t = 0; t < threats.length; t++) {
-                    var threat = threats[t];
+                for (const threat of threats) {
                     // 检查是否已存在
-                    var exists = validMoves.some(function(move) {
-                        return move.x === threat.x && move.y === threat.y;
-                    });
+                    const exists = validMoves.some(move => move.x === threat.x && move.y === threat.y);
                     if (!exists) {
                         validMoves.push(threat);
                     }
@@ -60,18 +54,18 @@ var GobangAI = cc.Class({
                 
                 if (validMoves.length === 0) {
                     // 没有有效位置，返回中心点
-                    var center = Math.floor(board.length / 2);
+                    const center = Math.floor(board.length / 2);
                     resolve({x: center, y: center});
                     return;
                 }
                 
                 // 分步处理，避免阻塞主线程
-                function processBatch() {
-                    var batchSize = 2; // 每批处理2个位置（减少批次大小，降低主线程阻塞）
-                    var endIndex = Math.min(currentIndex + batchSize, validMoves.length);
+                const processBatch = () => {
+                    const batchSize = 2; // 每批处理2个位置（减少批次大小，降低主线程阻塞）
+                    const endIndex = Math.min(currentIndex + batchSize, validMoves.length);
                     
-                    for (var i = currentIndex; i < endIndex; i++) {
-                        var move = validMoves[i];
+                    for (let i = currentIndex; i < endIndex; i++) {
+                        const move = validMoves[i];
                         
                         // 检查超时
                         if (Date.now() - startTime > maxTime) {
@@ -81,9 +75,9 @@ var GobangAI = cc.Class({
                         }
                         
                         // 检查对手是否在此位置获胜
-                        var opponent = player === 1 ? 2 : 1;
+                        const opponent = player === 1 ? 2 : 1;
                         board[move.y][move.x] = opponent;
-                        if (self.isGameOver(board)) {
+                        if (this.isGameOver(board)) {
                             // 对手能赢，AI必须防守
                             defendMoves.push({x: move.x, y: move.y});
                         }
@@ -93,14 +87,14 @@ var GobangAI = cc.Class({
                         board[move.y][move.x] = player;
                         
                         // 检查是否立即获胜
-                        if (self.isGameOver(board)) {
+                        if (this.isGameOver(board)) {
                             // 立即获胜，返回该位置
                             resolve({x: move.x, y: move.y});
                             return;
                         }
                         
                         // 评估分数
-                        var score = self.minimax(board, self.config.searchDepth, 
+                        const score = this.minimax(board, this.config.searchDepth, 
                             -Infinity, Infinity, false, player);
                         
                         // 撤销落子
@@ -126,7 +120,7 @@ var GobangAI = cc.Class({
                         // 继续处理下一批，增加间隔到16ms（约60fps），让出主线程给动画
                         setTimeout(processBatch, 16);
                     }
-                }
+                };
                 
                 // 开始分步处理
                 processBatch();
@@ -147,20 +141,19 @@ var GobangAI = cc.Class({
      * @param {number} aiPlayer - AI玩家编号
      * @returns {number} 评估分数
      */
-    minimax: function(board, depth, alpha, beta, isMaximizing, aiPlayer) {
+    minimax(board, depth, alpha, beta, isMaximizing, aiPlayer) {
         // 基准条件
         if (depth === 0 || this.isGameOver(board)) {
             return this.evaluateBoard(board, aiPlayer);
         }
         
-        var validMoves = this.getValidMoves(board);
+        const validMoves = this.getValidMoves(board);
         
         if (isMaximizing) {
-            var maxEval = -Infinity;
-            for (var i = 0; i < validMoves.length; i++) {
-                var move = validMoves[i];
+            let maxEval = -Infinity;
+            for (const move of validMoves) {
                 board[move.y][move.x] = aiPlayer;
-                var evalScore = this.minimax(board, depth - 1, alpha, beta, false, aiPlayer);
+                const evalScore = this.minimax(board, depth - 1, alpha, beta, false, aiPlayer);
                 board[move.y][move.x] = 0;
                 maxEval = Math.max(maxEval, evalScore);
                 alpha = Math.max(alpha, evalScore);
@@ -168,12 +161,11 @@ var GobangAI = cc.Class({
             }
             return maxEval;
         } else {
-            var minEval = Infinity;
-            var opponent = aiPlayer === 1 ? 2 : 1;
-            for (var i = 0; i < validMoves.length; i++) {
-                var move = validMoves[i];
+            let minEval = Infinity;
+            const opponent = aiPlayer === 1 ? 2 : 1;
+            for (const move of validMoves) {
                 board[move.y][move.x] = opponent;
-                var evalScore = this.minimax(board, depth - 1, alpha, beta, true, aiPlayer);
+                const evalScore = this.minimax(board, depth - 1, alpha, beta, true, aiPlayer);
                 board[move.y][move.x] = 0;
                 minEval = Math.min(minEval, evalScore);
                 beta = Math.min(beta, evalScore);
@@ -189,13 +181,13 @@ var GobangAI = cc.Class({
      * @param {number} player - AI玩家编号
      * @returns {number} 评估分数
      */
-    evaluateBoard: function(board, player) {
-        var score = 0;
-        var opponent = player === 1 ? 2 : 1;
+    evaluateBoard(board, player) {
+        let score = 0;
+        const opponent = player === 1 ? 2 : 1;
         
         // 评估所有位置的棋型
-        for (var y = 0; y < board.length; y++) {
-            for (var x = 0; x < board[y].length; x++) {
+        for (let y = 0; y < board.length; y++) {
+            for (let x = 0; x < board[y].length; x++) {
                 if (board[y][x] === player) {
                     score += this.evaluatePosition(board, x, y, player);
                 } else if (board[y][x] === opponent) {
@@ -215,24 +207,22 @@ var GobangAI = cc.Class({
      * @param {number} player - 玩家编号
      * @returns {number} 棋型分数
      */
-    evaluatePosition: function(board, x, y, player) {
-        var score = 0;
-        var directions = [
+    evaluatePosition(board, x, y, player) {
+        let score = 0;
+        const directions = [
             [1, 0],   // 水平
             [0, 1],   // 垂直
             [1, 1],   // 右斜
             [1, -1],  // 左斜
         ];
         
-        for (var d = 0; d < directions.length; d++) {
-            var dx = directions[d][0];
-            var dy = directions[d][1];
-            var count = 1;  // 当前棋子
-            var openEnds = 0; // 开放端数量
+        for (const [dx, dy] of directions) {
+            let count = 1;  // 当前棋子
+            let openEnds = 0; // 开放端数量
             
             // 正向检查
-            var nx = x + dx;
-            var ny = y + dy;
+            let nx = x + dx;
+            let ny = y + dy;
             while (nx >= 0 && nx < board[0].length && ny >= 0 && ny < board.length && 
                    board[ny][nx] === player) {
                 count++;
@@ -279,29 +269,26 @@ var GobangAI = cc.Class({
      * @param {number} aiPlayer - AI玩家编号
      * @returns {Array} 威胁位置数组
      */
-    findOpponentFours: function(board, aiPlayer) {
-        var opponent = aiPlayer === 1 ? 2 : 1;
-        var threats = [];
-        var directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
-        var size = board.length;
+    findOpponentFours(board, aiPlayer) {
+        const opponent = aiPlayer === 1 ? 2 : 1;
+        const threats = [];
+        const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
+        const size = board.length;
         
         // 遍历棋盘所有位置
-        for (var y = 0; y < size; y++) {
-            for (var x = 0; x < size; x++) {
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
                 if (board[y][x] === opponent) {
                     // 检查四个方向
-                    for (var d = 0; d < directions.length; d++) {
-                        var dx = directions[d][0];
-                        var dy = directions[d][1];
-                        
+                    for (const [dx, dy] of directions) {
                         // 计算连续棋子数
-                        var count = 1;
-                        var openEnds = 0;
-                        var threatPos = null;
+                        let count = 1;
+                        let openEnds = 0;
+                        let threatPos = null;
                         
                         // 正向检查
-                        var nx = x + dx;
-                        var ny = y + dy;
+                        let nx = x + dx;
+                        let ny = y + dy;
                         while (nx >= 0 && nx < size && ny >= 0 && ny < size && board[ny][nx] === opponent) {
                             count++;
                             nx += dx;
@@ -330,9 +317,7 @@ var GobangAI = cc.Class({
                             // 添加威胁位置
                             if (threatPos) {
                                 // 避免重复
-                                var alreadyAdded = threats.some(function(pos) {
-                                    return pos.x === threatPos.x && pos.y === threatPos.y;
-                                });
+                                const alreadyAdded = threats.some(pos => pos.x === threatPos.x && pos.y === threatPos.y);
                                 if (!alreadyAdded) {
                                     threats.push(threatPos);
                                 }
@@ -351,15 +336,15 @@ var GobangAI = cc.Class({
      * @param {Array} board - 棋盘状态
      * @returns {Array} 有效位置数组
      */
-    getValidMoves: function(board) {
-        var moves = [];
-        var size = board.length;
-        var checked = {};
+    getValidMoves(board) {
+        const moves = [];
+        const size = board.length;
+        const checked = {};
         
         // 如果棋盘为空，返回中心点
-        var hasChess = false;
-        for (var y = 0; y < size; y++) {
-            for (var x = 0; x < size; x++) {
+        let hasChess = false;
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
                 if (board[y][x] !== 0) {
                     hasChess = true;
                     break;
@@ -369,21 +354,21 @@ var GobangAI = cc.Class({
         }
         
         if (!hasChess) {
-            var center = Math.floor(size / 2);
+            const center = Math.floor(size / 2);
             return [{x: center, y: center}];
         }
         
         // 只搜索已有棋子周围2格范围内的空位
-        for (var y = 0; y < size; y++) {
-            for (var x = 0; x < size; x++) {
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
                 if (board[y][x] !== 0) {
-                    for (var dy = -2; dy <= 2; dy++) {
-                        for (var dx = -2; dx <= 2; dx++) {
-                            var ny = y + dy;
-                            var nx = x + dx;
+                    for (let dy = -2; dy <= 2; dy++) {
+                        for (let dx = -2; dx <= 2; dx++) {
+                            const ny = y + dy;
+                            const nx = x + dx;
                             if (ny >= 0 && ny < size && nx >= 0 && nx < size && 
                                 board[ny][nx] === 0) {
-                                var key = nx + ',' + ny;
+                                const key = `${nx},${ny}`;
                                 if (!checked[key]) {
                                     checked[key] = true;
                                     moves.push({x: nx, y: ny});
@@ -403,18 +388,16 @@ var GobangAI = cc.Class({
      * @param {Array} board - 棋盘状态
      * @returns {boolean} 是否结束
      */
-    isGameOver: function(board) {
-        for (var y = 0; y < board.length; y++) {
-            for (var x = 0; x < board[y].length; x++) {
+    isGameOver(board) {
+        for (let y = 0; y < board.length; y++) {
+            for (let x = 0; x < board[y].length; x++) {
                 if (board[y][x] !== 0) {
                     // 检查四个方向是否有五连珠
-                    var directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
-                    for (var d = 0; d < directions.length; d++) {
-                        var dx = directions[d][0];
-                        var dy = directions[d][1];
-                        var count = 1;
-                        var nx = x + dx;
-                        var ny = y + dy;
+                    const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
+                    for (const [dx, dy] of directions) {
+                        let count = 1;
+                        let nx = x + dx;
+                        let ny = y + dy;
                         while (nx >= 0 && nx < board[0].length && ny >= 0 && ny < board.length && 
                                board[ny][nx] === board[y][x]) {
                             count++;
@@ -433,7 +416,7 @@ var GobangAI = cc.Class({
      * 预留扩展接口：设置难度
      * @param {string} level - 难度级别：'easy', 'medium', 'hard'
      */
-    setDifficulty: function(level) {
+    setDifficulty(level) {
         this.config.difficulty = level;
         
         switch(level) {
@@ -456,7 +439,7 @@ var GobangAI = cc.Class({
      * 预留扩展接口：设置思考时间
      * @param {number} timeMs - 思考时间（毫秒）
      */
-    setMaxThinkTime: function(timeMs) {
+    setMaxThinkTime(timeMs) {
         this.config.maxThinkTime = timeMs;
     },
     
@@ -464,10 +447,10 @@ var GobangAI = cc.Class({
      * 预留扩展接口：设置搜索深度
      * @param {number} depth - 搜索深度
      */
-    setSearchDepth: function(depth) {
+    setSearchDepth(depth) {
         this.config.searchDepth = depth;
     },
 });
 
-// 导出单例
-module.exports = new GobangAI();
+// 导出单例（Cocos Creator 2.4.3 不支持 ES6 模块）
+window.GobangAI = new GobangAI();

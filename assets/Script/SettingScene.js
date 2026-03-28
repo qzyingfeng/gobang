@@ -49,15 +49,15 @@ cc.Class({
         // 绑定难度按钮事件
         if (this.easyButton) {
             this.easyButton.node.on(cc.Node.EventType.TOUCH_START, 
-                function() { this.setAIDifficulty('easy'); }.bind(this), this);
+                () => this.setAIDifficulty('easy'), this);
         }
         if (this.mediumButton) {
             this.mediumButton.node.on(cc.Node.EventType.TOUCH_START, 
-                function() { this.setAIDifficulty('medium'); }.bind(this), this);
+                () => this.setAIDifficulty('medium'), this);
         }
         if (this.hardButton) {
             this.hardButton.node.on(cc.Node.EventType.TOUCH_START, 
-                function() { this.setAIDifficulty('hard'); }.bind(this), this);
+                () => this.setAIDifficulty('hard'), this);
         }
         
         // 绑定返回按钮事件
@@ -95,12 +95,12 @@ cc.Class({
      */
     _updateVolumeLabels() {
         if (this.musicVolumeLabel && this.musicVolumeSlider) {
-            var musicPercent = Math.round(this.musicVolumeSlider.progress * 100);
-            this.musicVolumeLabel.string = musicPercent + "%";
+            const musicPercent = Math.round(this.musicVolumeSlider.progress * 100);
+            this.musicVolumeLabel.string = `${musicPercent}%`;
         }
         if (this.soundVolumeLabel && this.soundVolumeSlider) {
-            var soundPercent = Math.round(this.soundVolumeSlider.progress * 100);
-            this.soundVolumeLabel.string = soundPercent + "%";
+            const soundPercent = Math.round(this.soundVolumeSlider.progress * 100);
+            this.soundVolumeLabel.string = `${soundPercent}%`;
         }
     },
 
@@ -108,7 +108,7 @@ cc.Class({
      * 更新难度按钮状态
      */
     _updateDifficultyButtons() {
-        var currentDifficulty = SettingManager.getAIDifficulty();
+        const currentDifficulty = SettingManager.getAIDifficulty();
         
         // 更新按钮样式（高亮当前选中的难度）
         if (this.easyButton) {
@@ -126,7 +126,7 @@ cc.Class({
      * 背景音乐音量变化
      */
     onMusicVolumeChange() {
-        var volume = this.musicVolumeSlider.progress;
+        const volume = this.musicVolumeSlider.progress;
         SettingManager.setMusicVolume(volume);
         this._updateVolumeLabels();
     },
@@ -135,7 +135,7 @@ cc.Class({
      * 音效音量变化
      */
     onSoundVolumeChange() {
-        var volume = this.soundVolumeSlider.progress;
+        const volume = this.soundVolumeSlider.progress;
         SettingManager.setSoundVolume(volume);
         this._updateVolumeLabels();
         

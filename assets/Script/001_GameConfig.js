@@ -4,11 +4,10 @@
  * 
  * 使用方式：
  * 直接使用全局变量 GameConfig
- * let poolSize = GameConfig.CHESS.POOL_SIZE;
+ * const poolSize = GameConfig.CHESS.POOL_SIZE;
  */
 
-var GameConfig = {
-
+const GameConfig = {
     // ==================== 棋盘配置 ====================
     BOARD: {
         DEFAULT_WIDTH: 15,          // 默认棋盘宽度（格子数）

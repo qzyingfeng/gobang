@@ -92,7 +92,7 @@ cc.Class({
      */
     getChessType() {
         // 根据当前显示的精灵帧判断棋子类型
-        let currentSpriteFrame = this.getComponent(cc.Sprite).spriteFrame;
+        const currentSpriteFrame = this.getComponent(cc.Sprite).spriteFrame;
         
         // 遍历所有棋子精灵帧，找到匹配的索引
         for (let i = 0; i < this.sptFrames.length; i++) {
@@ -136,7 +136,7 @@ cc.Class({
             this.markerNode.parent = this.node;
             
             // 添加绘图组件，只绘制一次
-            let graphics = this.markerNode.addComponent(cc.Graphics);
+            const graphics = this.markerNode.addComponent(cc.Graphics);
             graphics.fillColor = cc.Color.RED;
             graphics.circle(0, 0, 8);
             graphics.fill();
@@ -176,7 +176,35 @@ cc.Class({
         // 隐藏最后落子标记
         this.hideLastMoveMarker();
         
+        // 重置阴影节点
+        this.resetShadow();
+        
         // 显示节点
         this.node.active = true;
+    },
+
+    /**
+     * 重置阴影节点状态
+     * 阴影节点是棋子的子节点，需要单独重置
+     */
+    resetShadow() {
+        // 查找阴影子节点
+        const shadowNode = this.node.getChildByName("Shadow");
+        if (shadowNode) {
+            // 重置阴影透明度（默认180）
+            shadowNode.opacity = 180;
+            
+            // 重置阴影位置（默认(0, -8)）
+            shadowNode.setPosition(0, -8);
+            
+            // 重置阴影缩放
+            shadowNode.scale = 1;
+            
+            // 停止阴影节点的动画
+            shadowNode.stopAllActions();
+            
+            // 显示阴影节点
+            shadowNode.active = true;
+        }
     },
 });

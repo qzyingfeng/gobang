@@ -87,7 +87,7 @@ cc.Class({
         }
         
         //显示面板
-        this.panelNode.active = true
+        this.panelNode.active = true;
 
         // 更新为暂停状态显示
         this._updatePlayPauseButton(GameConfig.REPLAY.MODE.PAUSED);
@@ -112,7 +112,7 @@ cc.Class({
     updateProgress(progress) {
         // 更新进度标签
         if (this.progressLabel) {
-            this.progressLabel.string = progress.currentStep + " / " + progress.totalSteps;
+            this.progressLabel.string = `${progress.currentStep} / ${progress.totalSteps}`;
         }
         
         // 更新播放/暂停按钮状态
@@ -129,7 +129,7 @@ cc.Class({
         AudioManager.play(GameConfig.AUDIO.NAMES.BUTTON_CLICK);
         
         // 获取Battle脚本
-        var battleScript = this._getBattleScript();
+        const battleScript = this._getBattleScript();
         if (battleScript && battleScript.toggleReplayPlayPause) {
             battleScript.toggleReplayPlayPause();
         }
@@ -141,7 +141,7 @@ cc.Class({
     onStepBackClick() {
         AudioManager.play(GameConfig.AUDIO.NAMES.BUTTON_CLICK);
         
-        var battleScript = this._getBattleScript();
+        const battleScript = this._getBattleScript();
         if (battleScript && battleScript.replayStepBackward) {
             battleScript.replayStepBackward();
         }
@@ -153,7 +153,7 @@ cc.Class({
     onStepForwardClick() {
         AudioManager.play(GameConfig.AUDIO.NAMES.BUTTON_CLICK);
         
-        var battleScript = this._getBattleScript();
+        const battleScript = this._getBattleScript();
         if (battleScript && battleScript.replayStepForward) {
             battleScript.replayStepForward();
         }
@@ -167,7 +167,7 @@ cc.Class({
         
         // 切换到下一个速度选项
         this._currentSpeedIndex = (this._currentSpeedIndex + 1) % this._speedOptions.length;
-        var speed = this._speedOptions[this._currentSpeedIndex].value;
+        const speed = this._speedOptions[this._currentSpeedIndex].value;
         
         // 更新速度显示
         this._updateSpeedLabel();
@@ -182,7 +182,7 @@ cc.Class({
     onExitClick() {
         AudioManager.play(GameConfig.AUDIO.NAMES.BUTTON_CLICK);
         
-        var battleScript = this._getBattleScript();
+        const battleScript = this._getBattleScript();
         if (battleScript && battleScript.stopReplay) {
             battleScript.stopReplay();
         }
@@ -199,9 +199,9 @@ cc.Class({
      */
     _getBattleScript() {
         // 从父节点获取Battle组件
-        var battleNode = this.node.parent;
+        let battleNode = this.node.parent;
         while (battleNode) {
-            var battleScript = battleNode.getComponent("Battle");
+            const battleScript = battleNode.getComponent("Battle");
             if (battleScript) {
                 return battleScript;
             }

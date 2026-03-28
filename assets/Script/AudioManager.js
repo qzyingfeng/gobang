@@ -5,7 +5,7 @@
  * 如果音效文件不存在，程序会继续运行，不会崩溃
  */
 
-var AudioManager = {
+const AudioManager = {
     // 已加载的音频剪辑缓存
     _audioClips: {},
     
@@ -23,18 +23,17 @@ var AudioManager = {
      * @param {Array} audioNames - 要预加载的音频名称数组，如 ['placeChess', 'win']
      * @param {Function} callback - 加载完成回调
      */
-    init: function(audioNames, callback) {
+    init(audioNames, callback) {
         if (!audioNames || audioNames.length === 0) {
             if (callback) callback();
             return;
         }
         
-        var loadedCount = 0;
-        var totalCount = audioNames.length;
+        let loadedCount = 0;
+        const totalCount = audioNames.length;
         
-        for (var i = 0; i < audioNames.length; i++) {
-            var name = audioNames[i];
-            this._loadAudioClip(name, function(clip) {
+        for (const name of audioNames) {
+            this._loadAudioClip(name, () => {
                 loadedCount++;
                 if (loadedCount >= totalCount && callback) {
                     callback();
@@ -48,26 +47,25 @@ var AudioManager = {
      * @param {string} audioName - 音频名称（不带扩展名）
      * @param {Function} callback - 加载完成回调，参数为cc.AudioClip
      */
-    _loadAudioClip: function(audioName, callback) {
+    _loadAudioClip(audioName, callback) {
         if (this._audioClips[audioName]) {
-            cc.log('音频已缓存:', audioName);
+            cc.log(`音频已缓存: ${audioName}`);
             if (callback) callback(this._audioClips[audioName]);
             return;
         }
         
-        var self = this;
-        cc.log('开始加载音频:', audioName);
-        cc.loader.loadRes('Audio/' + audioName, cc.AudioClip, function(err, clip) {
+        cc.log(`开始加载音频: ${audioName}`);
+        cc.loader.loadRes(`Audio/${audioName}`, cc.AudioClip, (err, clip) => {
             if (err) {
-                if (self.showErrors) {
-                    cc.warn('音频文件未找到或加载失败:', audioName, '(游戏将继续运行)');
+                if (this.showErrors) {
+                    cc.warn(`音频文件未找到或加载失败: ${audioName} (游戏将继续运行)`);
                 }
-                cc.log('音频加载失败:', audioName, err);
+                cc.log(`音频加载失败: ${audioName}`, err);
                 if (callback) callback(null);
                 return;
             }
-            cc.log('音频加载成功:', audioName, clip);
-            self._audioClips[audioName] = clip;
+            cc.log(`音频加载成功: ${audioName}`, clip);
+            this._audioClips[audioName] = clip;
             if (callback) callback(clip);
         });
     },
@@ -79,26 +77,23 @@ var AudioManager = {
      * @param {number} volume - 音量（0-1），默认使用_defaultVolume
      * @returns {number} 音频ID，可用于停止播放，如果失败返回-1
      */
-    play: function(audioName, loop, volume) {
-        var self = this;
-        loop = loop || false;
-        volume = volume !== undefined ? volume : this._defaultVolume;
-        cc.log('播放音效请求:', audioName, 'loop:', loop, 'volume:', volume);
+    play(audioName, loop = false, volume = this._defaultVolume) {
+        cc.log(`播放音效请求: ${audioName} loop: ${loop} volume: ${volume}`);
         
         // 如果已加载，直接播放
         if (this._audioClips[audioName]) {
-            cc.log('音效已缓存，直接播放:', audioName);
+            cc.log(`音效已缓存，直接播放: ${audioName}`);
             return this._playClip(this._audioClips[audioName], loop, volume, audioName);
         }
         
         // 否则先加载再播放
-        cc.log('音效未缓存，开始加载:', audioName);
-        this._loadAudioClip(audioName, function(clip) {
+        cc.log(`音效未缓存，开始加载: ${audioName}`);
+        this._loadAudioClip(audioName, (clip) => {
             if (clip) {
-                cc.log('音效加载完成，开始播放:', audioName);
-                self._playClip(clip, loop, volume, audioName);
+                cc.log(`音效加载完成，开始播放: ${audioName}`);
+                this._playClip(clip, loop, volume, audioName);
             } else {
-                cc.log('音效加载失败，无法播放:', audioName);
+                cc.log(`音效加载失败，无法播放: ${audioName}`);
             }
             // 如果clip为null，静默失败，不播放但也不报错
         });
@@ -109,18 +104,18 @@ var AudioManager = {
     /**
      * 播放音频剪辑内部方法
      */
-    _playClip: function(clip, loop, volume, audioName) {
+    _playClip(clip, loop, volume, audioName) {
         try {
-            cc.log('调用cc.audioEngine.play:', audioName, 'loop:', loop, 'volume:', volume);
-            var audioId = cc.audioEngine.play(clip, loop, volume);
-            cc.log('播放成功，audioId:', audioId, '音效:', audioName);
+            cc.log(`调用cc.audioEngine.play: ${audioName} loop: ${loop} volume: ${volume}`);
+            const audioId = cc.audioEngine.play(clip, loop, volume);
+            cc.log(`播放成功，audioId: ${audioId} 音效: ${audioName}`);
             this._playingIds[audioName] = audioId;
             return audioId;
         } catch (e) {
             if (this.showErrors) {
-                cc.warn('音效播放失败:', audioName, '(游戏将继续运行)');
+                cc.warn(`音效播放失败: ${audioName} (游戏将继续运行)`);
             }
-            cc.log('播放异常:', audioName, e);
+            cc.log(`播放异常: ${audioName}`, e);
             return -1;
         }
     },
@@ -129,7 +124,7 @@ var AudioManager = {
      * 停止指定音效
      * @param {string} audioName - 音频名称
      */
-    stop: function(audioName) {
+    stop(audioName) {
         if (this._playingIds[audioName] !== undefined) {
             try {
                 cc.audioEngine.stop(this._playingIds[audioName]);
@@ -143,7 +138,7 @@ var AudioManager = {
     /**
      * 停止所有音效
      */
-    stopAll: function() {
+    stopAll() {
         try {
             cc.audioEngine.stopAll();
         } catch (e) {
@@ -156,7 +151,7 @@ var AudioManager = {
      * 设置默认音量
      * @param {number} volume - 音量（0-1）
      */
-    setDefaultVolume: function(volume) {
+    setDefaultVolume(volume) {
         this._defaultVolume = Math.max(0, Math.min(1, volume));
     },
     
@@ -164,7 +159,7 @@ var AudioManager = {
      * 设置背景音乐音量
      * @param {number} volume - 音量（0-1）
      */
-    setMusicVolume: function(volume) {
+    setMusicVolume(volume) {
         this._musicVolume = Math.max(0, Math.min(1, volume));
         if (this._musicAudioId !== -1) {
             try {
@@ -179,7 +174,7 @@ var AudioManager = {
      * 获取背景音乐音量
      * @returns {number} 音量（0-1）
      */
-    getMusicVolume: function() {
+    getMusicVolume() {
         return this._musicVolume;
     },
     
@@ -188,10 +183,7 @@ var AudioManager = {
      * @param {string} audioName - 音频名称
      * @param {boolean} loop - 是否循环播放
      */
-    playMusic: function(audioName, loop) {
-        var self = this;
-        loop = loop !== undefined ? loop : true;
-        
+    playMusic(audioName, loop = true) {
         // 如果正在播放相同的音乐，不重复播放
         if (this._currentMusicName === audioName && this._musicAudioId !== -1) {
             return;
@@ -207,9 +199,9 @@ var AudioManager = {
         }
         
         // 否则先加载再播放
-        this._loadAudioClip(audioName, function(clip) {
+        this._loadAudioClip(audioName, (clip) => {
             if (clip) {
-                self._playMusicClip(clip, loop, audioName);
+                this._playMusicClip(clip, loop, audioName);
             }
         });
     },
@@ -217,19 +209,19 @@ var AudioManager = {
     /**
      * 播放背景音乐剪辑内部方法
      */
-    _playMusicClip: function(clip, loop, audioName) {
+    _playMusicClip(clip, loop, audioName) {
         try {
             this._musicAudioId = cc.audioEngine.play(clip, loop, this._musicVolume);
             this._currentMusicName = audioName;
         } catch (e) {
-            cc.warn('背景音乐播放失败:', audioName);
+            cc.warn(`背景音乐播放失败: ${audioName}`);
         }
     },
     
     /**
      * 停止背景音乐
      */
-    stopMusic: function() {
+    stopMusic() {
         if (this._musicAudioId !== -1) {
             try {
                 cc.audioEngine.stop(this._musicAudioId);
@@ -245,21 +237,19 @@ var AudioManager = {
      * 预加载所有Audio目录下的音频（谨慎使用，可能很多）
      * @param {Function} callback - 加载完成回调
      */
-    preloadAll: function(callback) {
-        var self = this;
-        cc.loader.loadResDir('Audio', cc.AudioClip, function(err, clips) {
+    preloadAll(callback) {
+        cc.loader.loadResDir('Audio', cc.AudioClip, (err, clips) => {
             if (err) {
-                if (self.showErrors) {
-                    cc.warn('音频目录加载失败:', err, '(游戏将继续运行)');
+                if (this.showErrors) {
+                    cc.warn(`音频目录加载失败: ${err} (游戏将继续运行)`);
                 }
                 if (callback) callback();
                 return;
             }
             
-            for (var i = 0; i < clips.length; i++) {
-                var clip = clips[i];
-                var name = clip.name; // 假设文件名就是音频名称
-                self._audioClips[name] = clip;
+            for (const clip of clips) {
+                const name = clip.name; // 假设文件名就是音频名称
+                this._audioClips[name] = clip;
             }
             
             if (callback) callback();
@@ -271,7 +261,7 @@ var AudioManager = {
      * @param {string} audioName - 音频名称
      * @returns {boolean} 是否已加载
      */
-    isLoaded: function(audioName) {
+    isLoaded(audioName) {
         return !!this._audioClips[audioName];
     },
     
@@ -279,7 +269,7 @@ var AudioManager = {
      * 获取已加载的所有音效名称
      * @returns {Array} 已加载的音效名称数组
      */
-    getLoadedAudioNames: function() {
+    getLoadedAudioNames() {
         return Object.keys(this._audioClips);
     }
 };

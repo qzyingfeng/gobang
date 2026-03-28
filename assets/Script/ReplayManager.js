@@ -11,7 +11,7 @@
 
 // GameConfig 为全局变量，无需 require
 
-var ReplayManager = {
+const ReplayManager = {
     // 回放状态
     _state: GameConfig.REPLAY.MODE.STOPPED,
     
@@ -49,16 +49,13 @@ var ReplayManager = {
      * @param {Object} callbacks - 回调函数 {onProgressUpdate, onStateChange}
      * @param {Array} boardSnapshots - 棋盘快照数组（用于快速跳转）
      */
-    init: function(moveHistory, battleScript, callbacks, boardSnapshots) {
+    init(moveHistory, battleScript, callbacks, boardSnapshots) {
         // 保存落子历史（深拷贝，避免修改原始数据）
-        this._moveHistory = [];
-        for (var i = 0; i < moveHistory.length; i++) {
-            this._moveHistory.push({
-                x: moveHistory[i].x,
-                y: moveHistory[i].y,
-                playerIdx: moveHistory[i].playerIdx,
-            });
-        }
+        this._moveHistory = moveHistory.map(move => ({
+            x: move.x,
+            y: move.y,
+            playerIdx: move.playerIdx,
+        }));
         
         // 保存棋盘快照引用（用于快速跳转）
         this._boardSnapshots = boardSnapshots || [];
@@ -81,7 +78,7 @@ var ReplayManager = {
     /**
      * 开始回放
      */
-    start: function() {
+    start() {
         if (this._totalSteps === 0) {
             cc.warn("没有可回放的记录");
             return;
@@ -99,7 +96,7 @@ var ReplayManager = {
     /**
      * 暂停回放
      */
-    pause: function() {
+    pause() {
         if (this._state !== GameConfig.REPLAY.MODE.PLAYING) {
             return;
         }
@@ -113,7 +110,7 @@ var ReplayManager = {
     /**
      * 继续回放
      */
-    resume: function() {
+    resume() {
         if (this._state !== GameConfig.REPLAY.MODE.PAUSED) {
             return;
         }
@@ -127,7 +124,7 @@ var ReplayManager = {
     /**
      * 停止回放
      */
-    stop: function() {
+    stop() {
         this._clearTimer();
         this._setState(GameConfig.REPLAY.MODE.STOPPED);
         
@@ -137,7 +134,7 @@ var ReplayManager = {
     /**
      * 重置回放（回到开头）
      */
-    reset: function() {
+    reset() {
         this._clearTimer();
         this._currentStep = 0;
         this._setState(GameConfig.REPLAY.MODE.STOPPED);
@@ -154,7 +151,7 @@ var ReplayManager = {
     /**
      * 前进一步
      */
-    stepForward: function() {
+    stepForward() {
         if (this._currentStep >= this._totalSteps) {
             return;
         }
@@ -173,7 +170,7 @@ var ReplayManager = {
     /**
      * 后退一步（使用快照优化，O(1)复杂度）
      */
-    stepBackward: function() {
+    stepBackward() {
         if (this._currentStep <= 0) {
             return;
         }
@@ -187,7 +184,7 @@ var ReplayManager = {
      * 跳转到指定步数
      * @param {number} step - 目标步数（0-based）
      */
-    jumpToStep: function(step) {
+    jumpToStep(step) {
         if (step < 0 || step > this._totalSteps) {
             return;
         }
@@ -201,7 +198,7 @@ var ReplayManager = {
      * 设置播放速度
      * @param {number} speed - 播放速度（毫秒/步）
      */
-    setSpeed: function(speed) {
+    setSpeed(speed) {
         this._speed = speed;
         cc.log("回放速度设置为:", speed, "ms/步");
         
@@ -215,7 +212,7 @@ var ReplayManager = {
     /**
      * 切换播放/暂停状态
      */
-    togglePlayPause: function() {
+    togglePlayPause() {
         if (this._state === GameConfig.REPLAY.MODE.PLAYING) {
             this.pause();
         } else if (this._state === GameConfig.REPLAY.MODE.PAUSED) {
@@ -229,7 +226,7 @@ var ReplayManager = {
      * 获取当前状态
      * @returns {string} 当前状态
      */
-    getState: function() {
+    getState() {
         return this._state;
     },
     
@@ -237,7 +234,7 @@ var ReplayManager = {
      * 获取当前进度信息
      * @returns {Object} 进度信息 {currentStep, totalSteps, speed, state}
      */
-    getProgress: function() {
+    getProgress() {
         return {
             currentStep: this._currentStep,
             totalSteps: this._totalSteps,
@@ -250,7 +247,7 @@ var ReplayManager = {
      * 是否正在回放中
      * @returns {boolean} 是否正在回放
      */
-    isReplaying: function() {
+    isReplaying() {
         return this._state !== GameConfig.REPLAY.MODE.STOPPED;
     },
     
@@ -260,7 +257,7 @@ var ReplayManager = {
      * 设置状态并通知回调
      * @param {string} state - 新状态
      */
-    _setState: function(state) {
+    _setState(state) {
         this._state = state;
         if (this._onStateChange) {
             this._onStateChange(state);
@@ -270,7 +267,7 @@ var ReplayManager = {
     /**
      * 通知进度更新回调
      */
-    _notifyProgressUpdate: function() {
+    _notifyProgressUpdate() {
         if (this._onProgressUpdate) {
             this._onProgressUpdate(this.getProgress());
         }
@@ -279,25 +276,24 @@ var ReplayManager = {
     /**
      * 调度下一步播放
      */
-    _scheduleNextStep: function() {
-        var self = this;
-        this._timerId = setTimeout(function() {
-            if (self._state !== GameConfig.REPLAY.MODE.PLAYING) {
+    _scheduleNextStep() {
+        this._timerId = setTimeout(() => {
+            if (this._state !== GameConfig.REPLAY.MODE.PLAYING) {
                 return;
             }
             
-            if (self._currentStep >= self._totalSteps) {
-                self._setState(GameConfig.REPLAY.MODE.STOPPED);
+            if (this._currentStep >= this._totalSteps) {
+                this._setState(GameConfig.REPLAY.MODE.STOPPED);
                 cc.log("回放播放完毕");
                 return;
             }
             
-            self._playStep(self._currentStep);
-            self._currentStep++;
-            self._notifyProgressUpdate();
+            this._playStep(this._currentStep);
+            this._currentStep++;
+            this._notifyProgressUpdate();
             
             // 继续下一步
-            self._scheduleNextStep();
+            this._scheduleNextStep();
         }, this._speed);
     },
     
@@ -305,12 +301,12 @@ var ReplayManager = {
      * 播放指定步数
      * @param {number} stepIndex - 步数索引
      */
-    _playStep: function(stepIndex) {
+    _playStep(stepIndex) {
         if (stepIndex < 0 || stepIndex >= this._totalSteps) {
             return;
         }
         
-        var move = this._moveHistory[stepIndex];
+        const move = this._moveHistory[stepIndex];
         if (this._battleScript && this._battleScript.replayPlaceChess) {
             this._battleScript.replayPlaceChess(move.x, move.y, move.playerIdx);
         }
@@ -322,7 +318,7 @@ var ReplayManager = {
      * 重放到指定步数（使用快照优化）
      * @param {number} targetStep - 目标步数
      */
-    _replayToStep: function(targetStep) {
+    _replayToStep(targetStep) {
         // 清空棋盘
         if (this._battleScript && this._battleScript.clearBoardForReplay) {
             this._battleScript.clearBoardForReplay();
@@ -337,13 +333,13 @@ var ReplayManager = {
         if (this._boardSnapshots.length >= targetStep && 
             this._battleScript && 
             this._battleScript.restoreFromSnapshot) {
-            var snapshot = this._boardSnapshots[targetStep - 1];
+            const snapshot = this._boardSnapshots[targetStep - 1];
             this._battleScript.restoreFromSnapshot(snapshot);
             cc.log("使用快照恢复到第", targetStep, "步");
         } else {
             // 没有快照，回退到从头播放（兼容旧逻辑）
             cc.warn("快照不可用，从头播放到第", targetStep, "步");
-            for (var i = 0; i < targetStep; i++) {
+            for (let i = 0; i < targetStep; i++) {
                 this._playStep(i);
             }
         }
@@ -352,7 +348,7 @@ var ReplayManager = {
     /**
      * 清除定时器
      */
-    _clearTimer: function() {
+    _clearTimer() {
         if (this._timerId !== null) {
             clearTimeout(this._timerId);
             this._timerId = null;

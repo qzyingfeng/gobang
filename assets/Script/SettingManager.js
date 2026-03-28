@@ -5,7 +5,7 @@
 
 // GameConfig 为全局变量，无需 require
 
-var SettingManager = {
+const SettingManager = {
     // 使用中心化配置的键名
     KEYS: GameConfig.STORAGE_KEYS,
     
@@ -25,7 +25,7 @@ var SettingManager = {
     /**
      * 初始化设置管理器
      */
-    init: function() {
+    init() {
         this._settings = {
             musicVolume: this._loadSetting(this.KEYS.MUSIC_VOLUME, this._defaults.musicVolume),
             soundVolume: this._loadSetting(this.KEYS.SOUND_VOLUME, this._defaults.soundVolume),
@@ -40,8 +40,8 @@ var SettingManager = {
      * @param {*} defaultValue - 默认值
      * @returns {*} 设置值
      */
-    _loadSetting: function(key, defaultValue) {
-        var value = cc.sys.localStorage.getItem(key);
+    _loadSetting(key, defaultValue) {
+        const value = cc.sys.localStorage.getItem(key);
         if (value === null || value === undefined) {
             return defaultValue;
         }
@@ -58,7 +58,7 @@ var SettingManager = {
      * @param {string} key - 设置键名
      * @param {*} value - 设置值
      */
-    _saveSetting: function(key, value) {
+    _saveSetting(key, value) {
         cc.sys.localStorage.setItem(key, JSON.stringify(value));
     },
     
@@ -66,7 +66,7 @@ var SettingManager = {
      * 获取背景音乐音量
      * @returns {number} 音量值 (0-1)
      */
-    getMusicVolume: function() {
+    getMusicVolume() {
         return this._settings.musicVolume;
     },
     
@@ -74,7 +74,7 @@ var SettingManager = {
      * 设置背景音乐音量
      * @param {number} volume - 音量值 (0-1)
      */
-    setMusicVolume: function(volume) {
+    setMusicVolume(volume) {
         this._settings.musicVolume = Math.max(0, Math.min(1, volume));
         this._saveSetting(this.KEYS.MUSIC_VOLUME, this._settings.musicVolume);
         
@@ -86,7 +86,7 @@ var SettingManager = {
      * 获取音效音量
      * @returns {number} 音量值 (0-1)
      */
-    getSoundVolume: function() {
+    getSoundVolume() {
         return this._settings.soundVolume;
     },
     
@@ -94,7 +94,7 @@ var SettingManager = {
      * 设置音效音量
      * @param {number} volume - 音量值 (0-1)
      */
-    setSoundVolume: function(volume) {
+    setSoundVolume(volume) {
         this._settings.soundVolume = Math.max(0, Math.min(1, volume));
         this._saveSetting(this.KEYS.SOUND_VOLUME, this._settings.soundVolume);
         
@@ -106,7 +106,7 @@ var SettingManager = {
      * 获取AI难度
      * @returns {string} 难度级别
      */
-    getAIDifficulty: function() {
+    getAIDifficulty() {
         return this._settings.aiDifficulty;
     },
     
@@ -114,7 +114,7 @@ var SettingManager = {
      * 设置AI难度
      * @param {string} difficulty - 难度级别
      */
-    setAIDifficulty: function(difficulty) {
+    setAIDifficulty(difficulty) {
         if (this.AI_DIFFICULTY[difficulty.toUpperCase()]) {
             this._settings.aiDifficulty = difficulty;
             this._saveSetting(this.KEYS.AI_DIFFICULTY, this._settings.aiDifficulty);
@@ -125,14 +125,14 @@ var SettingManager = {
      * 获取所有设置
      * @returns {Object} 设置对象
      */
-    getAllSettings: function() {
+    getAllSettings() {
         return JSON.parse(JSON.stringify(this._settings));
     },
     
     /**
      * 重置所有设置为默认值
      */
-    resetToDefaults: function() {
+    resetToDefaults() {
         this._settings = JSON.parse(JSON.stringify(this._defaults));
         this._saveSetting(this.KEYS.MUSIC_VOLUME, this._settings.musicVolume);
         this._saveSetting(this.KEYS.SOUND_VOLUME, this._settings.soundVolume);

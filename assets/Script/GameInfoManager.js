@@ -101,7 +101,7 @@ cc.Class({
      */
     updateTurnDisplay() {
         if (this.turnLabel) {
-            this.turnLabel.string = "回合: " + this.turnCount;
+            this.turnLabel.string = `回合: ${this.turnCount}`;
         }
     },
 
@@ -110,10 +110,10 @@ cc.Class({
      */
     updateTimeDisplay() {
         if (this.timeLabel) {
-            var minutes = Math.floor(this.elapsedTime / 60);
-            var seconds = Math.floor(this.elapsedTime % 60);
-            var timeStr = this._padZero(minutes) + ":" + this._padZero(seconds);
-            this.timeLabel.string = "用时: " + timeStr;
+            const minutes = Math.floor(this.elapsedTime / 60);
+            const seconds = Math.floor(this.elapsedTime % 60);
+            const timeStr = `${this._padZero(minutes)}:${this._padZero(seconds)}`;
+            this.timeLabel.string = `用时: ${timeStr}`;
         }
     },
 
@@ -122,7 +122,7 @@ cc.Class({
      */
     updateUndoCountDisplay() {
         if (this.undoCountLabel) {
-            this.undoCountLabel.string = "悔棋: " + this.undoCount + "次";
+            this.undoCountLabel.string = `悔棋: ${this.undoCount}次`;
         }
     },
 
@@ -140,15 +140,15 @@ cc.Class({
      * @param {number} num - 数字
      * @returns {string} 补零后的字符串
      */
-    _padZero: function(num) {
-        return num < 10 ? "0" + num : "" + num;
+    _padZero(num) {
+        return num < 10 ? `0${num}` : `${num}`;
     },
 
     /**
      * 获取游戏统计信息
      * @returns {Object} 统计信息
      */
-    getStats: function() {
+    getStats() {
         return {
             turnCount: this.turnCount,
             elapsedTime: this.elapsedTime,

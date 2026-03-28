@@ -37,16 +37,31 @@ cc.Class({
     },
 
     /**
-     * 显示胜利弹窗
+     * 显示胜利弹窗（带缩放+淡入动画）
      * @param {number} winnerIdx - 获胜方索引：1表示黑子，2表示白子
      */
     showWinPopup(winnerIdx) {
         // 根据获胜方索引设置显示文本
-        let winnerText = winnerIdx === 1 ? "黑子" : "白子";
+        const winnerText = winnerIdx === 1 ? "黑子" : "白子";
         // 更新胜利文本标签内容
-        this.winLabel.string = winnerText + "获胜！";
+        this.winLabel.string = `${winnerText}获胜！`;
+        
+        // 设置初始状态（缩放为0，完全透明）
+        this.popupNode.setScale(0);
+        this.popupNode.opacity = 0;
+        
         // 激活弹窗节点，使其可见
         this.popupNode.active = true;
+        
+        // 播放弹性缩放动画（0.5s）
+        const scaleAction = cc.scaleTo(0.5, 1).easing(cc.easeBackOut());
+        
+        // 播放淡入动画（0.3s）
+        const fadeAction = cc.fadeTo(0.3, 255);
+        
+        // 同时播放缩放和淡入
+        this.popupNode.runAction(scaleAction);
+        this.popupNode.runAction(fadeAction);
     },
 
     /**
@@ -91,9 +106,9 @@ cc.Class({
         AudioManager.play('buttonClick');
         
         // 获取父节点（Battle场景根节点）
-        var battleNode = this.node.parent;
+        const battleNode = this.node.parent;
         if (battleNode) {
-            var battleScript = battleNode.getComponent("Battle");
+            const battleScript = battleNode.getComponent("Battle");
             if (battleScript) {
                 // 调用Battle的startReplay方法
                 battleScript.startReplay();
