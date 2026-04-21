@@ -7,8 +7,8 @@
   "premultiplyAlpha": false,
   "genMipmaps": false,
   "packable": true,
-  "width": 2048,
-  "height": 2048,
+  "width": 100,
+  "height": 40,
   "platformSettings": {},
   "subMetas": {
     "sureBtnBg": {
@@ -22,14 +22,14 @@
       "offsetY": 0,
       "trimX": 0,
       "trimY": 0,
-      "width": 2048,
-      "height": 2048,
-      "rawWidth": 2048,
-      "rawHeight": 2048,
-      "borderTop": 764,
-      "borderBottom": 742,
-      "borderLeft": 221,
-      "borderRight": 221,
+      "width": 100,
+      "height": 40,
+      "rawWidth": 100,
+      "rawHeight": 40,
+      "borderTop": 40,
+      "borderBottom": 0,
+      "borderLeft": 100,
+      "borderRight": 0,
       "subMetas": {}
     }
   }

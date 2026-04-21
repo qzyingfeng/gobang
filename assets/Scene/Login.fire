@@ -191,7 +191,7 @@
       "array": [
         0,
         0,
-        342.02336042768286,
+        342.18828767032636,
         0,
         0,
         0,
@@ -979,9 +979,9 @@
     "_opacity": 255,
     "_color": {
       "__type__": "cc.Color",
-      "r": 0,
-      "g": 0,
-      "b": 0,
+      "r": 255,
+      "g": 255,
+      "b": 255,
       "a": 255
     },
     "_contentSize": {
@@ -1038,8 +1038,8 @@
     ],
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
-    "_string": "",
-    "_N$string": "",
+    "_string": "ai对战",
+    "_N$string": "ai对战",
     "_fontSize": 20,
     "_lineHeight": 40,
     "_enableWrapText": false,
@@ -1072,7 +1072,7 @@
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
     "_spriteFrame": {
-      "__uuid__": "cd5493b0-4faf-4bca-91e9-262eea77c478"
+      "__uuid__": "ab32d529-0439-47a5-9846-a54d2a08c1d6"
     },
     "_type": 1,
     "_sizeMode": 0,
@@ -1175,23 +1175,13 @@
       "a": 200
     },
     "_N$normalSprite": {
-      "__uuid__": "cd5493b0-4faf-4bca-91e9-262eea77c478"
+      "__uuid__": "ab32d529-0439-47a5-9846-a54d2a08c1d6"
     },
-    "_N$pressedSprite": {
-      "__uuid__": "cd5493b0-4faf-4bca-91e9-262eea77c478"
-    },
-    "pressedSprite": {
-      "__uuid__": "cd5493b0-4faf-4bca-91e9-262eea77c478"
-    },
-    "_N$hoverSprite": {
-      "__uuid__": "cd5493b0-4faf-4bca-91e9-262eea77c478"
-    },
-    "hoverSprite": {
-      "__uuid__": "cd5493b0-4faf-4bca-91e9-262eea77c478"
-    },
-    "_N$disabledSprite": {
-      "__uuid__": "cd5493b0-4faf-4bca-91e9-262eea77c478"
-    },
+    "_N$pressedSprite": null,
+    "pressedSprite": null,
+    "_N$hoverSprite": null,
+    "hoverSprite": null,
+    "_N$disabledSprite": null,
     "_N$target": {
       "__id__": 18
     },

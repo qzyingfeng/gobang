@@ -44,7 +44,7 @@ cc.Class({
         // 根据获胜方索引设置显示文本
         const winnerText = winnerIdx === 1 ? "黑子" : "白子";
         // 更新胜利文本标签内容
-        this.winLabel.string = `${winnerText}获胜！`;
+        this.winLabel.string = `${winnerText}获胜!`;
         
         // 设置初始状态（缩放为0，完全透明）
         this.popupNode.setScale(0);

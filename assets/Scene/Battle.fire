@@ -201,7 +201,7 @@
       "array": [
         0,
         0,
-        349.99153334307226,
+        342.18828767032636,
         0,
         0,
         0,
@@ -1723,7 +1723,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 97.87,
+      "width": 171.11,
       "height": 50.4
     },
     "_anchorPoint": {
@@ -1775,8 +1775,8 @@
     ],
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
-    "_string": "Label",
-    "_N$string": "Label",
+    "_string": "黑子获胜!",
+    "_N$string": "黑子获胜!",
     "_fontSize": 40,
     "_lineHeight": 40,
     "_enableWrapText": true,
@@ -2039,7 +2039,7 @@
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
     "_spriteFrame": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_type": 1,
     "_sizeMode": 0,
@@ -2142,19 +2142,19 @@
       "a": 200
     },
     "_N$normalSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_N$pressedSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "pressedSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_N$hoverSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "hoverSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_N$disabledSprite": null,
     "_N$target": {
@@ -2408,7 +2408,7 @@
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
     "_spriteFrame": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_type": 1,
     "_sizeMode": 0,
@@ -2511,19 +2511,19 @@
       "a": 200
     },
     "_N$normalSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_N$pressedSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "pressedSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_N$hoverSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "hoverSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_N$disabledSprite": null,
     "_N$target": {
@@ -2777,7 +2777,7 @@
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
     "_spriteFrame": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_type": 1,
     "_sizeMode": 0,
@@ -2880,19 +2880,19 @@
       "a": 200
     },
     "_N$normalSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_N$pressedSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "pressedSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_N$hoverSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "hoverSprite": {
-      "__uuid__": "136ff79d-c7ac-457c-8135-6c5de154426e"
+      "__uuid__": "eec430d9-2304-488e-b328-b50f460ef5f7"
     },
     "_N$disabledSprite": null,
     "_N$target": {
@@ -4800,8 +4800,8 @@
     ],
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
-    "_string": "速度",
-    "_N$string": "速度",
+    "_string": "退出",
+    "_N$string": "退出",
     "_fontSize": 20,
     "_lineHeight": 40,
     "_enableWrapText": false,
@@ -5647,6 +5647,8 @@
     "replayProgressLabel": {
       "__id__": 98
     },
+    "particleNode": null,
+    "graphicsLineNode": null,
     "_id": "d0LKX/tsBLB5vM5mMaeMGU"
   }
 ]
