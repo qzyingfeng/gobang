@@ -1,0 +1,8 @@
+{
+  "loginLayer": {
+    "path": "Prefab/loginLayer"
+  },
+  "battleLayer": {
+    "path": "Prefab/battleLayer"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "settingLayer": {
+    "path": "Prefab/settingLayer"
+  },
+  "winLayer": {
+    "path": "Prefab/winLayer"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "oh-my-opencode@latest"
+  ],
+  "instructions": [
+    "C:\\Users\\ASUS\\.config\\opencode\\AGENTS.md"
+  ],
+  "mcp": {
+    "obsidian-brain": {
+      "type": "local",
+      "command": ["npx", "-y", "obsidian-brain@latest", "server"],
+      "enabled": true,
+      "environment": {
+        "VAULT_PATH": "F:/GameDev-KnowledgeBase"
+      }
+    }
+  }
+}
